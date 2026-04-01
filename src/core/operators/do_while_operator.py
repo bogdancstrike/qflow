@@ -1,4 +1,5 @@
 """DO_WHILE operator — looping execution while condition is true."""
+import time
 
 from framework.commons.logger import logger
 
@@ -20,6 +21,7 @@ class DoWhileOperator(BaseOperator):
         all_results = []
 
         while True:
+            time.sleep(0.05)
             iteration += 1
 
             # Store iteration counter in context for use by loop tasks

@@ -142,7 +142,7 @@ def _task_create_inner(span):
     # Publish to Kafka for async processing
     try:
         from framework.streams.kafka_client import KafkaClient
-        kafka = KafkaClient(bootstrap_servers=Config.KAFKA_BOOTSTRAP_SERVERS)
+        kafka = KafkaClient(bootstrap_servers=Config.KAFKA_BOOTSTRAP_SERVERS, security_protocol=None)
         kafka.put_message(
             Config.KAFKA_TASK_TOPIC_IN,
             {"task_id": task["id"], **input_data, "desired_output": data["desired_output"]},
@@ -157,15 +157,16 @@ def _task_create_inner(span):
 
 def _task_list():
     """List tasks with optional filters."""
-    status = flask_request.args.get("status")
-    input_type = flask_request.args.get("input_type")
-    desired_output = flask_request.args.get("desired_output")
-    limit = int(flask_request.args.get("limit", 50))
-    offset = int(flask_request.args.get("offset", 0))
+    with tracer.start_as_current_span("api.task_list") as span:
+        status = flask_request.args.get("status")
+        input_type = flask_request.args.get("input_type")
+        desired_output = flask_request.args.get("desired_output")
+        limit = int(flask_request.args.get("limit", 50))
+        offset = int(flask_request.args.get("offset", 0))
 
-    tasks = list_tasks(status=status, input_type=input_type,
-                       desired_output=desired_output, limit=limit, offset=offset)
-    return jsonify({"tasks": tasks, "count": len(tasks), "limit": limit, "offset": offset})
+        tasks = list_tasks(status=status, input_type=input_type,
+                           desired_output=desired_output, limit=limit, offset=offset)
+        return jsonify({"tasks": tasks, "count": len(tasks), "limit": limit, "offset": offset})
 
 
 def _task_get(task_id: str):
