@@ -6,7 +6,7 @@ Each function signature follows the QF pattern: (app, operation, request, **kwar
 Because QF creates one Resource per endpoint entry, combined handlers dispatch
 by HTTP method when multiple methods share the same URL.
 """
-
+import json
 import os
 import uuid
 
@@ -145,7 +145,11 @@ def _task_create_inner(span):
         kafka = KafkaClient(bootstrap_servers=Config.KAFKA_BOOTSTRAP_SERVERS, security_protocol=None)
         kafka.put_message(
             Config.KAFKA_TASK_TOPIC_IN,
-            {"task_id": task["id"], **input_data, "desired_output": data["desired_output"]},
+            json.dumps({
+                "task_id": task["id"],
+                **input_data,
+                "desired_output": data["desired_output"]
+            }),
             key=task["id"],
         )
         logger.info(f"[API] Published task {task['id']} to {Config.KAFKA_TASK_TOPIC_IN}")
