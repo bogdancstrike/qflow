@@ -1,0 +1,105 @@
+{
+  "primitive": "HTTP",
+  "name": "HTTP Request",
+  "description": "Makes an HTTP request to any external service. This is the fundamental primitive for calling AI APIs, webhooks, REST services, or any HTTP endpoint.",
+  "schema": {
+    "task_ref": {
+      "type": "string",
+      "required": true,
+      "description": "Unique reference name for this task within the flow"
+    },
+    "type": {
+      "type": "string",
+      "const": "HTTP",
+      "required": true
+    },
+    "input_parameters": {
+      "type": "object",
+      "required": true,
+      "properties": {
+        "http_request": {
+          "type": "object",
+          "required": true,
+          "properties": {
+            "method": {
+              "type": "string",
+              "enum": ["GET", "POST", "PUT", "PATCH", "DELETE"],
+              "default": "POST"
+            },
+            "url": {
+              "type": "string",
+              "required": true,
+              "description": "URL with {{env.*}} interpolation, e.g. {{env.AI_STT_URL}}/transcribe"
+            },
+            "headers": {
+              "type": "object",
+              "default": {"Content-Type": "application/json"}
+            },
+            "body": {
+              "type": "object",
+              "description": "Request body with {{...}} interpolation for dynamic values"
+            },
+            "timeout_seconds": {
+              "type": "integer",
+              "default": 120
+            }
+          }
+        }
+      }
+    },
+    "output_mapping": {
+      "type": "object",
+      "description": "Map response fields to step output using JSONPath ($.response.body.field)"
+    },
+    "retry": {
+      "type": "object",
+      "properties": {
+        "max_attempts": {"type": "integer", "default": 3},
+        "backoff_strategy": {"type": "string", "enum": ["exponential", "linear", "fixed"], "default": "exponential"},
+        "base_delay_seconds": {"type": "number", "default": 2},
+        "retryable_status_codes": {"type": "array", "default": [500, 502, 503, 429]}
+      }
+    },
+    "mock_response": {
+      "type": "object",
+      "description": "Returned instead of making the real HTTP call when DEV_MODE=true"
+    }
+  },
+  "examples": [
+    {
+      "description": "Call an AI STT service",
+      "task_ref": "stt_transcribe",
+      "type": "HTTP",
+      "input_parameters": {
+        "http_request": {
+          "method": "POST",
+          "url": "${env.AI_STT_URL}/transcribe",
+          "headers": {"Content-Type": "application/json", "Authorization": "Bearer ${env.AI_STT_TOKEN}"},
+          "body": {"file_path": "${workflow.input.file_path}"},
+          "timeout_seconds": 120
+        }
+      },
+      "output_mapping": {
+        "text": "$.response.body.result.transcription",
+        "language": "$.response.body.result.detected_language"
+      },
+      "mock_response": {"text": "Mocked transcription.", "language": "en"}
+    },
+    {
+      "description": "Call a generic REST API",
+      "task_ref": "fetch_user",
+      "type": "HTTP",
+      "input_parameters": {
+        "http_request": {
+          "method": "GET",
+          "url": "${env.USER_SERVICE_URL}/users/${workflow.input.user_id}",
+          "headers": {"Authorization": "Bearer ${env.API_TOKEN}"}
+        }
+      },
+      "output_mapping": {
+        "name": "$.response.body.name",
+        "email": "$.response.body.email"
+      }
+    }
+  ]
+}

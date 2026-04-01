@@ -1,0 +1,30 @@
+{
+  "primitive": "FORK_JOIN",
+  "name": "Parallel Execution",
+  "description": "Executes multiple branches in parallel and waits for all (or specified) branches to complete. Each branch is a list of tasks.",
+  "schema": {
+    "task_ref": {"type": "string", "required": true},
+    "type": {"type": "string", "const": "FORK_JOIN", "required": true},
+    "fork_tasks": {
+      "type": "array",
+      "required": true,
+      "description": "Array of branches, where each branch is an array of task definitions"
+    },
+    "join_on": {
+      "type": "array",
+      "description": "Task refs to wait for before continuing. If omitted, waits for all."
+    }
+  },
+  "examples": [
+    {
+      "description": "Run NER and Sentiment in parallel",
+      "task_ref": "parallel_analysis",
+      "type": "FORK_JOIN",
+      "fork_tasks": [
+        [{"task_ref": "ner_branch", "type": "HTTP", "input_parameters": {"http_request": {"method": "POST", "url": "${env.AI_NER_URL}/extract", "body": {"text": "${workflow.variables.processed_text}"}}}}],
+        [{"task_ref": "sentiment_branch", "type": "HTTP", "input_parameters": {"http_request": {"method": "POST", "url": "${env.AI_SENTIMENT_URL}/analyze", "body": {"text": "${workflow.variables.processed_text}"}}}}]
+      ],
+      "join_on": ["ner_branch", "sentiment_branch"]
+    }
+  ]
+}

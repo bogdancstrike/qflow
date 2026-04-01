@@ -1,0 +1,29 @@
+{
+  "primitive": "WAIT",
+  "name": "Wait",
+  "description": "Pauses execution until a timeout elapses or an external signal is received. Used for human-in-the-loop approvals or waiting for async processing.",
+  "schema": {
+    "task_ref": {"type": "string", "required": true},
+    "type": {"type": "string", "const": "WAIT", "required": true},
+    "wait_type": {
+      "type": "string",
+      "enum": ["timeout", "signal"],
+      "default": "timeout"
+    },
+    "timeout_seconds": {"type": "integer", "default": 60},
+    "on_timeout": {
+      "type": "string",
+      "enum": ["CONTINUE", "FAIL"],
+      "default": "CONTINUE"
+    }
+  },
+  "examples": [
+    {
+      "task_ref": "wait_for_approval",
+      "type": "WAIT",
+      "wait_type": "timeout",
+      "timeout_seconds": 300,
+      "on_timeout": "CONTINUE"
+    }
+  ]
+}

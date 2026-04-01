@@ -1,0 +1,25 @@
+{
+  "primitive": "SET_VARIABLE",
+  "name": "Set Variable",
+  "description": "Sets or updates variables in the workflow context. Variables are accessible downstream via ${workflow.variables.<name>}. Useful for accumulating results, setting flags, or bridging data between SWITCH branches.",
+  "schema": {
+    "task_ref": {"type": "string", "required": true},
+    "type": {"type": "string", "const": "SET_VARIABLE", "required": true},
+    "input_parameters": {
+      "type": "object",
+      "required": true,
+      "description": "Key-value pairs to set. Values support ${...} interpolation."
+    }
+  },
+  "examples": [
+    {
+      "task_ref": "set_flags",
+      "type": "SET_VARIABLE",
+      "input_parameters": {
+        "needs_translation": "${steps.language_detect.output.language != 'en'}",
+        "original_language": "${steps.language_detect.output.language}",
+        "processing_started_at": "${now()}"
+      }
+    }
+  ]
+}

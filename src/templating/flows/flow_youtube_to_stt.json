@@ -1,0 +1,80 @@
+{
+  "flow_id": "flow_youtube_to_stt",
+  "name": "YouTube to Speech-to-Text",
+  "version": 1,
+  "description": "Downloads a YouTube video and transcribes it using speech-to-text.",
+  "input_schema": {
+    "type": "object",
+    "required": ["youtube_url"],
+    "properties": {
+      "youtube_url": {
+        "type": "string",
+        "description": "The YouTube video URL to download and transcribe"
+      }
+    }
+  },
+  "output_parameters": {
+    "text": "{{steps.stt.output.text}}",
+    "language": "{{steps.stt.output.language}}"
+  },
+  "tasks": [
+    {
+      "task_ref": "log_start",
+      "type": "LOG",
+      "input_parameters": {
+        "level": "INFO",
+        "message": "Starting YouTube-to-STT flow for URL: {{workflow.input.youtube_url}}"
+      }
+    },
+    {
+      "task_ref": "youtube_download",
+      "type": "HTTP",
+      "input_parameters": {
+        "http_request": {
+          "method": "POST",
+          "url": "{{env.AI_STT_URL}}/download_youtube",
+          "body": {
+            "url": "{{workflow.input.youtube_url}}"
+          },
+          "timeout_seconds": 300
+        }
+      },
+      "output_mapping": {
+        "file_path": "$.response.body.file_path"
+      },
+      "mock_response": {
+        "file_path": "/tmp/uploads/youtube_downloaded.mp4"
+      }
+    },
+    {
+      "task_ref": "stt",
+      "type": "HTTP",
+      "input_parameters": {
+        "http_request": {
+          "method": "POST",
+          "url": "{{env.AI_STT_URL}}/transcribe",
+          "body": {
+            "file_path": "{{steps.youtube_download.output.file_path}}"
+          },
+          "timeout_seconds": 600
+        }
+      },
+      "output_mapping": {
+        "text": "$.response.body.text",
+        "language": "$.response.body.language"
+      },
+      "mock_response": {
+        "text": "Welcome to this tutorial on machine learning. Today we will cover the basics of neural networks and how they can be applied to real-world problems.",
+        "language": "en"
+      }
+    },
+    {
+      "task_ref": "log_end",
+      "type": "LOG",
+      "input_parameters": {
+        "level": "INFO",
+        "message": "YouTube-to-STT flow completed. Transcription language: {{steps.stt.output.language}}"
+      }
+    }
+  ]
+}

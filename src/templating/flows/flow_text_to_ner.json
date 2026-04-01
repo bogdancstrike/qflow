@@ -1,0 +1,131 @@
+{
+  "flow_id": "flow_text_to_ner",
+  "name": "Text to Named Entity Recognition",
+  "version": 1,
+  "description": "Detects language of input text, translates if needed, and extracts named entities.",
+  "input_schema": {
+    "type": "object",
+    "required": ["text"],
+    "properties": {
+      "text": {
+        "type": "string",
+        "description": "The text to analyze for named entities"
+      }
+    }
+  },
+  "output_parameters": {
+    "entities": "{{steps.ner.output.entities}}",
+    "language_detected": "{{steps.language_detect.output.language}}"
+  },
+  "tasks": [
+    {
+      "task_ref": "log_start",
+      "type": "LOG",
+      "input_parameters": {
+        "level": "INFO",
+        "message": "Starting text-to-NER flow"
+      }
+    },
+    {
+      "task_ref": "language_detect",
+      "type": "HTTP",
+      "input_parameters": {
+        "http_request": {
+          "method": "POST",
+          "url": "{{env.AI_SERVICE_URL}}/detect_language",
+          "body": {
+            "text": "{{workflow.input.text}}"
+          },
+          "timeout_seconds": 30
+        }
+      },
+      "output_mapping": {
+        "language": "$.response.body.language",
+        "text": "$.response.body.text"
+      },
+      "mock_response": {
+        "language": "ja",
+        "text": "東京で開催された会議で田中太郎氏がソニーの新戦略を発表しました。"
+      }
+    },
+    {
+      "task_ref": "check_language",
+      "type": "SWITCH",
+      "expression": "{{steps.language_detect.output.language}}",
+      "decision_cases": {
+        "en": [
+          {
+            "task_ref": "set_en_text",
+            "type": "SET_VARIABLE",
+            "input_parameters": {
+              "processed_text": "{{steps.language_detect.output.text}}"
+            }
+          }
+        ]
+      },
+      "default_case": [
+        {
+          "task_ref": "translate_to_en",
+          "type": "HTTP",
+          "input_parameters": {
+            "http_request": {
+              "method": "POST",
+              "url": "{{env.AI_SERVICE_URL}}/translate",
+              "body": {
+                "text": "{{steps.language_detect.output.text}}",
+                "source_language": "{{steps.language_detect.output.language}}",
+                "target_language": "en"
+              },
+              "timeout_seconds": 60
+            }
+          },
+          "output_mapping": {
+            "text": "$.response.body.text"
+          },
+          "mock_response": {
+            "text": "At a conference held in Tokyo, Mr. Taro Tanaka announced Sony's new strategy."
+          }
+        },
+        {
+          "task_ref": "set_translated_text",
+          "type": "SET_VARIABLE",
+          "input_parameters": {
+            "processed_text": "{{steps.translate_to_en.output.text}}"
+          }
+        }
+      ]
+    },
+    {
+      "task_ref": "ner",
+      "type": "HTTP",
+      "input_parameters": {
+        "http_request": {
+          "method": "POST",
+          "url": "{{env.AI_SERVICE_URL}}/ner",
+          "body": {
+            "text": "{{workflow.variables.processed_text}}"
+          },
+          "timeout_seconds": 60
+        }
+      },
+      "output_mapping": {
+        "entities": "$.response.body.entities"
+      },
+      "mock_response": {
+        "entities": [
+          {"text": "Tokyo", "type": "LOCATION", "start": 27, "end": 32},
+          {"text": "Taro Tanaka", "type": "PERSON", "start": 38, "end": 49},
+          {"text": "Sony", "type": "ORGANIZATION", "start": 60, "end": 64}
+        ]
+      }
+    },
+    {
+      "task_ref": "log_end",
+      "type": "LOG",
+      "input_parameters": {
+        "level": "INFO",
+        "message": "Text-to-NER flow completed. Found entities. Detected language: {{steps.language_detect.output.language}}"
+      }
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "primitive": "SWITCH",
+  "name": "Conditional Branch",
+  "description": "Evaluates an expression and routes execution to one of several named branches, or a default_case. Like if/else or switch/case.",
+  "schema": {
+    "task_ref": {"type": "string", "required": true},
+    "type": {"type": "string", "const": "SWITCH", "required": true},
+    "expression": {
+      "type": "string",
+      "required": true,
+      "description": "Expression to evaluate — the result is matched against decision_cases keys"
+    },
+    "decision_cases": {
+      "type": "object",
+      "required": true,
+      "description": "Map of value -> [task list]. The matching branch is executed."
+    },
+    "default_case": {
+      "type": "array",
+      "description": "Task list executed when no decision_case matches"
+    }
+  },
+  "examples": [
+    {
+      "description": "Route by detected language",
+      "task_ref": "check_language",
+      "type": "SWITCH",
+      "expression": "${steps.language_detect.output.language}",
+      "decision_cases": {
+        "en": [
+          {"task_ref": "set_en_text", "type": "SET_VARIABLE", "input_parameters": {"processed_text": "${steps.language_detect.output.text}"}}
+        ]
+      },
+      "default_case": [
+        {"task_ref": "translate", "type": "HTTP", "input_parameters": {"http_request": {"method": "POST", "url": "${env.AI_TRANSLATE_URL}/translate", "body": {"text": "${steps.language_detect.output.text}", "target_lang": "en"}}}},
+        {"task_ref": "set_translated", "type": "SET_VARIABLE", "input_parameters": {"processed_text": "${steps.translate.output.text}"}}
+      ]
+    }
+  ]
+}

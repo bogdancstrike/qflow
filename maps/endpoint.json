@@ -1,0 +1,57 @@
+{
+  "namespaces": [
+    {
+      "name": "api",
+      "description": "AI Flow Orchestrator API"
+    }
+  ],
+  "models": {
+    "Empty": {}
+  },
+  "endpoints": [
+    {
+      "namespace": "api",
+      "operation_name": "tasks",
+      "model_name": "Empty",
+      "request_method": ["POST", "GET"],
+      "api_url": "/api/tasks",
+      "exec_method": {
+        "module_name": "api.endpoints",
+        "method_name": "tasks_handler"
+      }
+    },
+    {
+      "namespace": "api",
+      "operation_name": "task_detail",
+      "model_name": "Empty",
+      "request_method": ["GET", "DELETE"],
+      "api_url": "/api/tasks/<task_id>",
+      "exec_method": {
+        "module_name": "api.endpoints",
+        "method_name": "task_detail_handler"
+      }
+    },
+    {
+      "namespace": "api",
+      "operation_name": "health",
+      "model_name": "Empty",
+      "request_method": ["GET"],
+      "api_url": "/api/health",
+      "exec_method": {
+        "module_name": "api.endpoints",
+        "method_name": "health_check"
+      }
+    },
+    {
+      "namespace": "api",
+      "operation_name": "flows",
+      "model_name": "Empty",
+      "request_method": ["GET"],
+      "api_url": "/api/flows",
+      "exec_method": {
+        "module_name": "api.endpoints",
+        "method_name": "flow_strategies"
+      }
+    }
+  ]
+}

@@ -1,0 +1,154 @@
+{
+  "flow_id": "flow_video_to_ner",
+  "name": "Video to Named Entity Recognition",
+  "version": 1,
+  "description": "Transcribes video, detects language, translates if needed, and extracts named entities.",
+  "input_schema": {
+    "type": "object",
+    "required": ["file_path"],
+    "properties": {
+      "file_path": {
+        "type": "string",
+        "description": "Path to the video or audio file to process"
+      }
+    }
+  },
+  "output_parameters": {
+    "entities": "{{steps.ner.output.entities}}",
+    "language_detected": "{{steps.language_detect.output.language}}"
+  },
+  "tasks": [
+    {
+      "task_ref": "log_start",
+      "type": "LOG",
+      "input_parameters": {
+        "level": "INFO",
+        "message": "Starting video-to-NER flow for file: {{workflow.input.file_path}}"
+      }
+    },
+    {
+      "task_ref": "stt",
+      "type": "HTTP",
+      "input_parameters": {
+        "http_request": {
+          "method": "POST",
+          "url": "{{env.AI_STT_URL}}/transcribe",
+          "body": {
+            "file_path": "{{workflow.input.file_path}}"
+          },
+          "timeout_seconds": 600
+        }
+      },
+      "output_mapping": {
+        "text": "$.response.body.text",
+        "language": "$.response.body.language"
+      },
+      "mock_response": {
+        "text": "Der Bundeskanzler hat gestern in Berlin eine wichtige Rede gehalten. Angela Merkel war ebenfalls anwesend.",
+        "language": "de"
+      }
+    },
+    {
+      "task_ref": "language_detect",
+      "type": "HTTP",
+      "input_parameters": {
+        "http_request": {
+          "method": "POST",
+          "url": "{{env.AI_SERVICE_URL}}/detect_language",
+          "body": {
+            "text": "{{steps.stt.output.text}}"
+          },
+          "timeout_seconds": 30
+        }
+      },
+      "output_mapping": {
+        "language": "$.response.body.language",
+        "text": "$.response.body.text"
+      },
+      "mock_response": {
+        "language": "de",
+        "text": "Der Bundeskanzler hat gestern in Berlin eine wichtige Rede gehalten. Angela Merkel war ebenfalls anwesend."
+      }
+    },
+    {
+      "task_ref": "check_language",
+      "type": "SWITCH",
+      "expression": "{{steps.language_detect.output.language}}",
+      "decision_cases": {
+        "en": [
+          {
+            "task_ref": "set_en_text",
+            "type": "SET_VARIABLE",
+            "input_parameters": {
+              "processed_text": "{{steps.language_detect.output.text}}"
+            }
+          }
+        ]
+      },
+      "default_case": [
+        {
+          "task_ref": "translate_to_en",
+          "type": "HTTP",
+          "input_parameters": {
+            "http_request": {
+              "method": "POST",
+              "url": "{{env.AI_SERVICE_URL}}/translate",
+              "body": {
+                "text": "{{steps.language_detect.output.text}}",
+                "source_language": "{{steps.language_detect.output.language}}",
+                "target_language": "en"
+              },
+              "timeout_seconds": 60
+            }
+          },
+          "output_mapping": {
+            "text": "$.response.body.text"
+          },
+          "mock_response": {
+            "text": "The Chancellor gave an important speech in Berlin yesterday. Angela Merkel was also present."
+          }
+        },
+        {
+          "task_ref": "set_translated_text",
+          "type": "SET_VARIABLE",
+          "input_parameters": {
+            "processed_text": "{{steps.translate_to_en.output.text}}"
+          }
+        }
+      ]
+    },
+    {
+      "task_ref": "ner",
+      "type": "HTTP",
+      "input_parameters": {
+        "http_request": {
+          "method": "POST",
+          "url": "{{env.AI_SERVICE_URL}}/ner",
+          "body": {
+            "text": "{{workflow.variables.processed_text}}"
+          },
+          "timeout_seconds": 60
+        }
+      },
+      "output_mapping": {
+        "entities": "$.response.body.entities"
+      },
+      "mock_response": {
+        "entities": [
+          {"text": "Chancellor", "type": "TITLE", "start": 4, "end": 14},
+          {"text": "Berlin", "type": "LOCATION", "start": 48, "end": 54},
+          {"text": "yesterday", "type": "DATE", "start": 55, "end": 64},
+          {"text": "Angela Merkel", "type": "PERSON", "start": 66, "end": 79}
+        ]
+      }
+    },
+    {
+      "task_ref": "log_end",
+      "type": "LOG",
+      "input_parameters": {
+        "level": "INFO",
+        "message": "Video-to-NER flow completed. Detected language: {{steps.language_detect.output.language}}"
+      }
+    }
+  ]
+}

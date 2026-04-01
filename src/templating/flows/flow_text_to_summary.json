@@ -1,0 +1,127 @@
+{
+  "flow_id": "flow_text_to_summary",
+  "name": "Text to Summary",
+  "version": 1,
+  "description": "Detects language of input text, translates if needed, and generates a summary.",
+  "input_schema": {
+    "type": "object",
+    "required": ["text"],
+    "properties": {
+      "text": {
+        "type": "string",
+        "description": "The text to summarize"
+      }
+    }
+  },
+  "output_parameters": {
+    "summary": "{{steps.summary.output.summary}}",
+    "language_detected": "{{steps.language_detect.output.language}}"
+  },
+  "tasks": [
+    {
+      "task_ref": "log_start",
+      "type": "LOG",
+      "input_parameters": {
+        "level": "INFO",
+        "message": "Starting text-to-summary flow"
+      }
+    },
+    {
+      "task_ref": "language_detect",
+      "type": "HTTP",
+      "input_parameters": {
+        "http_request": {
+          "method": "POST",
+          "url": "{{env.AI_SERVICE_URL}}/detect_language",
+          "body": {
+            "text": "{{workflow.input.text}}"
+          },
+          "timeout_seconds": 30
+        }
+      },
+      "output_mapping": {
+        "language": "$.response.body.language",
+        "text": "$.response.body.text"
+      },
+      "mock_response": {
+        "language": "it",
+        "text": "Il governo italiano ha approvato un nuovo piano economico che prevede investimenti significativi nelle energie rinnovabili. Il piano include la costruzione di nuovi parchi eolici e solari in tutto il paese. Si prevede la creazione di oltre centomila posti di lavoro entro il 2030."
+      }
+    },
+    {
+      "task_ref": "check_language",
+      "type": "SWITCH",
+      "expression": "{{steps.language_detect.output.language}}",
+      "decision_cases": {
+        "en": [
+          {
+            "task_ref": "set_en_text",
+            "type": "SET_VARIABLE",
+            "input_parameters": {
+              "processed_text": "{{steps.language_detect.output.text}}"
+            }
+          }
+        ]
+      },
+      "default_case": [
+        {
+          "task_ref": "translate_to_en",
+          "type": "HTTP",
+          "input_parameters": {
+            "http_request": {
+              "method": "POST",
+              "url": "{{env.AI_SERVICE_URL}}/translate",
+              "body": {
+                "text": "{{steps.language_detect.output.text}}",
+                "source_language": "{{steps.language_detect.output.language}}",
+                "target_language": "en"
+              },
+              "timeout_seconds": 60
+            }
+          },
+          "output_mapping": {
+            "text": "$.response.body.text"
+          },
+          "mock_response": {
+            "text": "The Italian government has approved a new economic plan that includes significant investments in renewable energy. The plan includes the construction of new wind and solar parks throughout the country. It is expected to create over one hundred thousand jobs by 2030."
+          }
+        },
+        {
+          "task_ref": "set_translated_text",
+          "type": "SET_VARIABLE",
+          "input_parameters": {
+            "processed_text": "{{steps.translate_to_en.output.text}}"
+          }
+        }
+      ]
+    },
+    {
+      "task_ref": "summary",
+      "type": "HTTP",
+      "input_parameters": {
+        "http_request": {
+          "method": "POST",
+          "url": "{{env.AI_SERVICE_URL}}/summarize",
+          "body": {
+            "text": "{{workflow.variables.processed_text}}"
+          },
+          "timeout_seconds": 120
+        }
+      },
+      "output_mapping": {
+        "summary": "$.response.body.summary"
+      },
+      "mock_response": {
+        "summary": "Italy approved an economic plan investing heavily in renewable energy, including new wind and solar parks nationwide, aiming to create 100,000+ jobs by 2030."
+      }
+    },
+    {
+      "task_ref": "log_end",
+      "type": "LOG",
+      "input_parameters": {
+        "level": "INFO",
+        "message": "Text-to-summary flow completed. Detected language: {{steps.language_detect.output.language}}"
+      }
+    }
+  ]
+}
