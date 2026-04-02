@@ -19,6 +19,7 @@ class Config:
     KAFKA_TASK_TOPIC_OUT = os.getenv("KAFKA_TASK_TOPIC_OUT", "flow.tasks.out")
     KAFKA_DLQ_TOPIC = os.getenv("KAFKA_DLQ_TOPIC", "flow.tasks.dlq")
     KAFKA_COMMIT_STRATEGY = os.getenv("KAFKA_COMMIT_STRATEGY", "before")
+    ERROR_TOPIC = os.getenv("ERROR_TOPIC", "flow.errors")
 
     # Poll tuning
     KAFKA_POLL_TIMEOUT_MS = int(os.getenv("KAFKA_POLL_TIMEOUT_MS", "1"))
