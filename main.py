@@ -27,6 +27,13 @@ sys.path.insert(0, str(BASE_DIR))
 from dotenv import load_dotenv
 load_dotenv()
 
+# Monkey-patch kafka-python OffsetAndMetadata to supply default leader_epoch.
+# The QF framework calls OffsetAndMetadata(offset, metadata) with 2 args, but
+# kafka-python 2.3.0 requires 3 (offset, metadata, leader_epoch).
+from collections import namedtuple as _nt
+import kafka.structs as _ks
+_ks.OffsetAndMetadata = _nt("OffsetAndMetadata", ["offset", "metadata", "leader_epoch"], defaults=[0])
+
 from src.config import Config
 from framework.app import FrameworkApp, FrameworkSettings
 from framework.commons.logger import logger

@@ -1,16 +1,37 @@
-.PHONY: run test test-unit test-integration lint docker-up docker-down migrate clean
+.PHONY: run test test-unit test-integration test-quality test-chaos test-e2e test-load lint docker-up docker-down migrate clean
 
 run:
 	python main.py
 
 test:
-	python -m pytest tests/ -v
+	python -m pytest tests/unit/ tests/integration/ -v
 
 test-unit:
 	python -m pytest tests/unit/ -v
 
 test-integration:
 	python -m pytest tests/integration/ -v
+
+test-quality:
+	python -m pytest tests/quality/ -v
+
+test-chaos:
+	python -m pytest tests/chaos/ -v
+
+test-e2e:
+	python -m pytest tests/e2e/ -v
+
+test-e2e-sh:
+	bash tests/e2e/run_e2e.sh
+
+test-load:
+	bash tests/load/run_load_tests.sh
+
+test-chaos-sh:
+	bash tests/chaos/run_chaos.sh
+
+test-all:
+	python -m pytest tests/unit/ tests/integration/ tests/quality/ -v
 
 lint:
 	python -m flake8 src/ --max-line-length=120 --ignore=E501,W503

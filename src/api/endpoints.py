@@ -10,7 +10,7 @@ import json
 import os
 import uuid
 
-from flask import jsonify, request as flask_request
+from flask import request as flask_request
 
 from framework.commons.logger import logger
 from framework.tracing import get_tracer
@@ -50,7 +50,7 @@ def task_detail_handler(app, operation, request, **kwargs):
     """
     task_id = kwargs.get("task_id") or flask_request.view_args.get("task_id")
     if not task_id:
-        return jsonify({"message": "task_id is required"}), 400
+        return {"message": "task_id is required"}, 400
 
     if flask_request.method == "DELETE":
         return _task_delete(task_id)
@@ -64,13 +64,13 @@ def task_detail_handler(app, operation, request, **kwargs):
 
 def health_check(app, operation, request, **kwargs):
     """GET /api/health — Healthcheck."""
-    return jsonify({
+    return {
         "status": "healthy",
         "dev_mode": Config.DEV_MODE,
         "primitives": len(list_primitives()),
         "flows": len(list_flows()),
         "supported_outputs": get_valid_outputs(),
-    })
+    }
 
 
 def flow_strategies(app, operation, request, **kwargs):
@@ -79,7 +79,7 @@ def flow_strategies(app, operation, request, **kwargs):
         {"input_type": it, "desired_output": do, "flow_id": fid}
         for (it, do), fid in sorted(FLOW_STRATEGIES.items())
     ]
-    return jsonify({"strategies": strategies, "count": len(strategies)})
+    return {"strategies": strategies, "count": len(strategies)}
 
 
 # ---------------------------------------------------------------------------
@@ -102,7 +102,7 @@ def _task_create_inner(span):
         file = flask_request.files.get("file")
 
         if not file:
-            return jsonify({"message": "No file uploaded", "errors": ["file is required"]}), 400
+            return {"message": "No file uploaded", "errors": ["file is required"]}, 400
 
         os.makedirs(Config.UPLOAD_DIR, exist_ok=True)
         filename = f"{uuid.uuid4()}_{file.filename}"
@@ -120,7 +120,7 @@ def _task_create_inner(span):
     # Validate
     errors = validate_task_input(data)
     if errors:
-        return jsonify({"message": "Validation failed", "errors": errors}), 400
+        return {"message": "Validation failed", "errors": errors}, 400
 
     # Normalize input_data
     input_data = data.get("input_data")
@@ -133,7 +133,7 @@ def _task_create_inner(span):
     try:
         task = create_task(data["input_type"], input_data, data["desired_output"])
     except ValueError as e:
-        return jsonify({"message": str(e), "errors": [str(e)]}), 400
+        return {"message": str(e), "errors": [str(e)]}, 400
 
     span.set_attribute("task.id", task["id"])
     span.set_attribute("task.input_type", data["input_type"])
@@ -156,7 +156,7 @@ def _task_create_inner(span):
     except Exception as e:
         logger.error(f"[API] Failed to publish task to Kafka: {e}")
 
-    return jsonify(task), 201
+    return task, 201
 
 
 def _task_list():
@@ -170,7 +170,7 @@ def _task_list():
 
         tasks = list_tasks(status=status, input_type=input_type,
                            desired_output=desired_output, limit=limit, offset=offset)
-        return jsonify({"tasks": tasks, "count": len(tasks), "limit": limit, "offset": offset})
+        return {"tasks": tasks, "count": len(tasks), "limit": limit, "offset": offset}
 
 
 def _task_get(task_id: str):
@@ -179,16 +179,16 @@ def _task_get(task_id: str):
         span.set_attribute("task.id", task_id)
         task = get_task(task_id)
         if task is None:
-            return jsonify({"message": f"Task {task_id} not found"}), 404
+            return {"message": f"Task {task_id} not found"}, 404
 
         task["step_logs"] = get_task_step_logs(task_id)
-        return jsonify(task)
+        return task
 
 
 def _task_delete(task_id: str):
     """Delete/cancel a task."""
     deleted = delete_task(task_id)
     if not deleted:
-        return jsonify({"message": f"Task {task_id} not found"}), 404
+        return {"message": f"Task {task_id} not found"}, 404
 
-    return jsonify({"message": f"Task {task_id} deleted"}), 200
+    return {"message": f"Task {task_id} deleted"}, 200

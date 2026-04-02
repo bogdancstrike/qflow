@@ -36,6 +36,7 @@ class Task(Base):
             "input_data": self.input_data,
             "desired_output": self.desired_output,
             "resolved_flow": self.resolved_flow,
+            "resolved_flow_definition": self.resolved_flow_definition,
             "status": self.status,
             "current_step": self.current_step,
             "step_results": self.step_results,
