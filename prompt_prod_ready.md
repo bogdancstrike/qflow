@@ -133,5 +133,46 @@ Make the AI Flow Orchestrator production-ready. The app is currently in POC/MVP 
 
 ---
 
-## 7. Performance Optimization
+### 7 Performance Optimization
 - Watch htop and see cpu usage. If 100% CPU, then find and solve the usage of it.
+
+### 8 Known Bugs
+
+After finishing, it has COMMIT FAIL (from qf library)
+
+```code
+Press CTRL+C to quit
+2026-04-02 17:40:24,646 - DEBUG - 🔵 Kafka consumer connected | topics=['flow.step.execute.in', 'flow.step.request.in', 'flow.tasks.in'] auto_commit=False - [no-traceparent]
+2026-04-02 17:40:24,647 - DEBUG - 🔵 Kafka producer connected | acks=1 linger_ms=5 batch_size=65536 - [no-traceparent]
+2026-04-02 17:40:24,648 - DEBUG - 🔵 [ai-flow-orchestrator] ETL start | topics=['flow.step.execute.in', 'flow.step.request.in', 'flow.tasks.in'] - [no-traceparent]
+ * Serving Flask app 'framework.app.runner'
+ * Debug mode: off
+2026-04-02 17:40:52,068 - DEBUG - 🔵 [IN] tp=flow.tasks.in[0] off=0 id=38ba84e3-9573-4a78-8825-241353568340 (pending) - [no-traceparent]
+2026-04-02 17:40:52,068 - DEBUG - 🟣 [DISPATCH] worker=flow_executor kind=single tp=flow.tasks.in[0] off=0 id=38ba84e3-9573-4a78-8825-241353568340 - [no-traceparent]
+2026-04-02 17:40:52,068 - INFO - [FLOW_EXECUTOR] Processing task 0f57c8d9-979c-478f-81ba-ba4d758a5ce5 - [traceparent=00-91c16afc2ca1c19bf91907cbef1acfdf-f8f2b7b4963fbc37-01]
+2026-04-02 17:40:52,083 - INFO - [EXECUTOR] Starting task: log_start (type=LOG) - [traceparent=00-91c16afc2ca1c19bf91907cbef1acfdf-c0f29568f1d5d7e6-01]
+2026-04-02 17:40:52,084 - INFO - [LOG] log_start: Starting text-to-NER flow | {'level': 'INFO'} - [traceparent=00-91c16afc2ca1c19bf91907cbef1acfdf-37769989a6af5218-01]
+2026-04-02 17:40:52,088 - INFO - [EXECUTOR] Completed task: log_start (0ms) - [traceparent=00-91c16afc2ca1c19bf91907cbef1acfdf-37769989a6af5218-01]
+2026-04-02 17:40:52,088 - INFO - [EXECUTOR] Starting task: language_detect (type=HTTP) - [traceparent=00-91c16afc2ca1c19bf91907cbef1acfdf-c0f29568f1d5d7e6-01]
+2026-04-02 17:40:52,088 - INFO - [MOCK] language_detect: returning mock response (delay=0.6s) - [traceparent=00-91c16afc2ca1c19bf91907cbef1acfdf-691fca81af23ade2-01]
+2026-04-02 17:40:52,676 - INFO - [EXECUTOR] Completed task: language_detect (579ms) - [traceparent=00-91c16afc2ca1c19bf91907cbef1acfdf-9df9ba7800ebb0e0-01]
+2026-04-02 17:40:52,676 - INFO - [EXECUTOR] Starting task: check_language (type=SWITCH) - [traceparent=00-91c16afc2ca1c19bf91907cbef1acfdf-c0f29568f1d5d7e6-01]
+2026-04-02 17:40:52,676 - INFO - [SWITCH] check_language: expression='ja', branch='default' - [traceparent=00-91c16afc2ca1c19bf91907cbef1acfdf-cdc85c1021e436fe-01]
+2026-04-02 17:40:52,676 - INFO - [EXECUTOR] Starting task: translate_to_en (type=HTTP) - [traceparent=00-91c16afc2ca1c19bf91907cbef1acfdf-cdc85c1021e436fe-01]
+2026-04-02 17:40:52,676 - INFO - [MOCK] translate_to_en: returning mock response (delay=1.3s) - [traceparent=00-91c16afc2ca1c19bf91907cbef1acfdf-840d84722f280a84-01]
+2026-04-02 17:40:53,946 - INFO - [EXECUTOR] Completed task: translate_to_en (1265ms) - [traceparent=00-91c16afc2ca1c19bf91907cbef1acfdf-4520d9b7fff21976-01]
+2026-04-02 17:40:53,946 - INFO - [EXECUTOR] Starting task: set_translated_text (type=SET_VARIABLE) - [traceparent=00-91c16afc2ca1c19bf91907cbef1acfdf-cdc85c1021e436fe-01]
+2026-04-02 17:40:53,946 - DEBUG - [SET_VARIABLE] set_translated_text: processed_text = At a conference held in Tokyo, Mr. Taro Tanaka announced Sony's new strategy. - [traceparent=00-91c16afc2ca1c19bf91907cbef1acfdf-681e0fa6b50d97cd-01]
+2026-04-02 17:40:53,946 - INFO - [SET_VARIABLE] set_translated_text: set 1 variable(s) - [traceparent=00-91c16afc2ca1c19bf91907cbef1acfdf-681e0fa6b50d97cd-01]
+2026-04-02 17:40:53,948 - INFO - [EXECUTOR] Completed task: set_translated_text (0ms) - [traceparent=00-91c16afc2ca1c19bf91907cbef1acfdf-681e0fa6b50d97cd-01]
+2026-04-02 17:40:53,950 - INFO - [EXECUTOR] Completed task: check_language (1271ms) - [traceparent=00-91c16afc2ca1c19bf91907cbef1acfdf-d9b2e54ec449ae48-01]
+2026-04-02 17:40:53,950 - INFO - [EXECUTOR] Starting task: ner (type=HTTP) - [traceparent=00-91c16afc2ca1c19bf91907cbef1acfdf-c0f29568f1d5d7e6-01]
+2026-04-02 17:40:53,950 - INFO - [MOCK] ner: returning mock response (delay=0.5s) - [traceparent=00-91c16afc2ca1c19bf91907cbef1acfdf-53fcba2b2fd7cbb9-01]
+2026-04-02 17:40:54,457 - INFO - [EXECUTOR] Completed task: ner (503ms) - [traceparent=00-91c16afc2ca1c19bf91907cbef1acfdf-a4383464cabfe0af-01]
+2026-04-02 17:40:54,457 - INFO - [EXECUTOR] Starting task: log_end (type=LOG) - [traceparent=00-91c16afc2ca1c19bf91907cbef1acfdf-c0f29568f1d5d7e6-01]
+2026-04-02 17:40:54,457 - INFO - [LOG] log_end: Text-to-NER flow completed. Found entities. Detected language: ja | {'level': 'INFO'} - [traceparent=00-91c16afc2ca1c19bf91907cbef1acfdf-e18f4823c4bb2c42-01]
+2026-04-02 17:40:54,459 - INFO - [EXECUTOR] Completed task: log_end (0ms) - [traceparent=00-91c16afc2ca1c19bf91907cbef1acfdf-e18f4823c4bb2c42-01]
+2026-04-02 17:40:54,462 - INFO - [FLOW_EXECUTOR] Task 0f57c8d9-979c-478f-81ba-ba4d758a5ce5 completed successfully - [traceparent=00-91c16afc2ca1c19bf91907cbef1acfdf-f8f2b7b4963fbc37-01]
+2026-04-02 17:40:54,464 - DEBUG - 🟢 [OUT] worker=flow_executor topic=flow.tasks.out id=None - [no-traceparent]
+2026-04-02 17:40:54,485 - DEBUG - 🟡 [COMMIT FAIL] err= - [no-traceparent]
+```
