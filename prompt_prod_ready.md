@@ -138,6 +138,8 @@ Make the AI Flow Orchestrator production-ready. The app is currently in POC/MVP 
 
 ### 8 Known Bugs
 
+#### 8.1
+
 After finishing, it has COMMIT FAIL (from qf library)
 
 ```code
@@ -175,4 +177,15 @@ Press CTRL+C to quit
 2026-04-02 17:40:54,462 - INFO - [FLOW_EXECUTOR] Task 0f57c8d9-979c-478f-81ba-ba4d758a5ce5 completed successfully - [traceparent=00-91c16afc2ca1c19bf91907cbef1acfdf-f8f2b7b4963fbc37-01]
 2026-04-02 17:40:54,464 - DEBUG - 🟢 [OUT] worker=flow_executor topic=flow.tasks.out id=None - [no-traceparent]
 2026-04-02 17:40:54,485 - DEBUG - 🟡 [COMMIT FAIL] err= - [no-traceparent]
+```
+
+#### 8.2
+
+error: Failed to publish task to Kafka: This class is a singleton!
+
+```code
+2026-04-02 17:44:28,739 - ERROR - [API] Failed to publish task to Kafka: This class is a singleton! - [traceparent=00-fb6f2795eacf21002ac7a606b13fbc4f-d330564f60228bf9-01]
+127.0.0.1 - - [02/Apr/2026 17:44:28] "POST /api/tasks HTTP/1.1" 201 -
+2026-04-02 17:44:28,824 - INFO - [RESOLVER] (text, sentiment) -> flow_text_to_sentiment - [traceparent=00-19c0459d5cffea454be607befd25e0c6-cae573faed7c4c4a-01]
+2026-04-02 17:44:28,828 - ERROR - [API] Failed to publish task to Kafka: This class is a singleton! - [traceparent=00-19c0459d5cffea454be607befd25e0c6-cae573faed7c4c4a-01]
 ```

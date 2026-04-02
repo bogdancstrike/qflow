@@ -116,7 +116,7 @@ class AIFlowUser(HttpUser):
                               json={
                                   "input_type": "text",
                                   "input_data": text,
-                                  "desired_output": "ner",
+                                  "desired_output": "sentiment",
                               },
                               catch_response=True) as resp:
             if resp.status_code == 201:
