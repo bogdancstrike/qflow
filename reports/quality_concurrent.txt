@@ -1,0 +1,38 @@
+
+======================================================================
+  TEST: test_10_parallel_text_ner_tasks
+  TIME: 2026-04-02 17:20:26
+  Parallel tasks: 10
+  Successes: 10
+  Failures: 0
+  Elapsed: 4.87s
+======================================================================
+
+======================================================================
+  TEST: test_mixed_parallel_tasks
+  TIME: 2026-04-02 17:20:32
+  Mixed parallel tasks: 5
+  Types: [('text', 'ner'), ('text', 'sentiment'), ('text', 'summary'), ('file_upload', 'stt'), ('file_upload', 'ner')]
+  Successes: 5
+  Failures: 0
+  Elapsed: 5.18s
+======================================================================
+
+======================================================================
+  TEST: test_10_parallel_text_ner_tasks
+  TIME: 2026-04-02 17:21:13
+  Parallel tasks: 10
+  Successes: 10
+  Failures: 0
+  Elapsed: 4.41s
+======================================================================
+
+======================================================================
+  TEST: test_mixed_parallel_tasks
+  TIME: 2026-04-02 17:21:18
+  Mixed parallel tasks: 5
+  Types: [('text', 'ner'), ('text', 'sentiment'), ('text', 'summary'), ('file_upload', 'stt'), ('file_upload', 'ner')]
+  Successes: 5
+  Failures: 0
+  Elapsed: 5.01s
+======================================================================
