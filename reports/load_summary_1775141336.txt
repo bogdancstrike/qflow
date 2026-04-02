@@ -1,0 +1,65 @@
+======================================================================
+  LOAD TEST SUMMARY
+  Time: 2026-04-02 17:48:56
+  Users: 0
+======================================================================
+
+  POST /api/tasks
+    Requests:   260
+    Failures:   0
+    Avg (ms):   7
+    p50 (ms):   7
+    p95 (ms):   10
+    p99 (ms):   26
+    RPS:        4.3
+
+  GET /api/health
+    Requests:   20
+    Failures:   0
+    Avg (ms):   2
+    p50 (ms):   2
+    p95 (ms):   2
+    p99 (ms):   2
+    RPS:        0.4
+
+  GET /api/tasks/[id] (poll)
+    Requests:   148
+    Failures:   148
+    Avg (ms):   2
+    p50 (ms):   2
+    p95 (ms):   2
+    p99 (ms):   4
+    RPS:        2.6
+
+  GET /api/flows
+    Requests:   23
+    Failures:   0
+    Avg (ms):   2
+    p50 (ms):   2
+    p95 (ms):   2
+    p99 (ms):   2
+    RPS:        0.3
+
+  GET /api/tasks?limit=10
+    Requests:   42
+    Failures:   0
+    Avg (ms):   4
+    p50 (ms):   4
+    p95 (ms):   5
+    p99 (ms):   6
+    RPS:        0.9
+
+  TOTAL
+    Requests:   493
+    Failures:   148
+    Avg (ms):   5
+    p50 (ms):   4
+    p95 (ms):   8
+    p99 (ms):   12
+    RPS:        8.5
+    Fail ratio: 30.02%
+
+  Resource Usage:
+    Max RSS: 61.3 MB
+    User CPU: 0.54s
+    Sys CPU: 0.07s
