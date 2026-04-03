@@ -27,11 +27,10 @@ os.environ["DATABASE_URL"] = "postgresql://qf:qf@localhost:5432/ai_flow"
 import src.models.task as task_module
 from src.models.task import init_db, get_session, Task
 from src.models.task_step_log import TaskStepLog
-from src.core.context import ExecutionContext
-from src.core.executor import execute_flow
+from src.dag.planner import build_execution_plan
+from src.dag.runner import run_plan
 from src.core.http_client import make_request, HttpClientError, _http_breaker
 from src.services.task_service import create_task, get_task, update_task_status
-from src.templating.registry import init_registry, get_flow
 
 
 REPORT_FILE = os.path.join(os.path.dirname(__file__), "../../reports/chaos_tests.txt")
@@ -48,26 +47,10 @@ def _write_report(test_name, lines):
         f.write(f"{'='*70}\n")
 
 
-def _make_env():
-    return {
-        "AI_SERVICE_URL": "http://ai-service:8000",
-        "AI_STT_URL": "http://stt-service:8001",
-        "AI_STT_TOKEN": "dev-token",
-        "AI_NER_URL": "http://ner-service:8002",
-        "AI_TRANSLATE_URL": "http://translate-service:8003",
-        "AI_LANGDETECT_URL": "http://langdetect-service:8004",
-        "AI_SENTIMENT_URL": "http://sentiment-service:8005",
-        "AI_SUMMARY_URL": "http://summary-service:8006",
-        "AI_TAXONOMY_URL": "http://taxonomy-service:8007",
-    }
-
-
 @pytest.fixture(scope="module", autouse=True)
 def setup_environment():
     task_module._engine = None
     task_module._SessionFactory = None
-    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    init_registry(base_dir)
     try:
         init_db()
     except Exception as e:
@@ -100,13 +83,14 @@ class TestPostgresFailureMidFlow:
 
     def test_db_dies_during_status_update(self):
         """Create task, start flow, DB dies when updating to COMPLETED."""
-        task = create_task("text", {"text": "Hello world"}, "ner")
+        task = create_task({"text": "Hello world"}, ["ner_result"])
         task_id = task["id"]
-        flow_def = get_flow(task["resolved_flow"])
+        
+        plan = build_execution_plan({"input_data": {"text": "Hello world"}, "outputs": ["ner_result"]})
 
         # Execute flow successfully
-        ctx = ExecutionContext({"text": "Hello world"}, _make_env())
-        result = execute_flow(flow_def, ctx, task_id)
+        ctx = {"text": "Hello world"}
+        result = run_plan(plan, ctx)
 
         # DB dies when we try to update status
         with patch("src.services.task_service.get_session") as mock_session:
@@ -134,7 +118,7 @@ class TestPostgresFailureMidFlow:
             mock_session.return_value = mock_sess
 
             with pytest.raises(OperationalError):
-                create_task("text", {"text": "hello"}, "ner")
+                create_task({"text": "hello"}, ["ner_result"])
 
             mock_sess.rollback.assert_called_once()
 
@@ -146,7 +130,7 @@ class TestPostgresFailureMidFlow:
 
     def test_db_intermittent_failure_recovery(self):
         """DB fails once then recovers — task should complete on retry."""
-        task = create_task("text", {"text": "Hello world"}, "ner")
+        task = create_task({"text": "Hello world"}, ["ner_result"])
         task_id = task["id"]
 
         # First update fails, second succeeds
@@ -187,7 +171,7 @@ class TestKafkaFailureMidFlow:
 
     def test_kafka_publish_failure_task_stays_pending(self):
         """If Kafka publish fails, task should exist in DB as PENDING."""
-        task = create_task("text", {"text": "hello"}, "ner")
+        task = create_task({"text": "hello"}, ["ner_result"])
         task_id = task["id"]
         assert task["status"] == "PENDING"
 
@@ -214,16 +198,15 @@ class TestKafkaFailureMidFlow:
 
     def test_kafka_output_failure_task_still_completed_in_db(self):
         """Flow completes but Kafka output publish fails — DB should still be updated."""
-        task = create_task("text", {"text": "hello"}, "ner")
+        task = create_task({"text": "hello"}, ["ner_result"])
         task_id = task["id"]
-        flow_def = get_flow(task["resolved_flow"])
-
-        ctx = ExecutionContext({"text": "hello"}, _make_env())
-        result = execute_flow(flow_def, ctx, task_id)
+        
+        plan = build_execution_plan({"input_data": {"text": "hello"}, "outputs": ["ner_result"]})
+        ctx = {"text": "hello"}
+        result = run_plan(plan, ctx)
 
         # Update DB (this happens before Kafka output in flow_executor)
-        update_task_status(task_id, "COMPLETED", final_output=result,
-                           step_results=ctx.steps)
+        update_task_status(task_id, "COMPLETED", final_output=result)
 
         actual = get_task(task_id)
         assert actual["status"] == "COMPLETED"
@@ -330,17 +313,17 @@ class TestCircuitBreakerTrip:
         assert _http_breaker.current_state == "open"
 
         # Now try to execute a flow — HTTP steps should fail with CircuitBreakerError
-        task = create_task("text", {"text": "hello"}, "ner")
-        flow_def = get_flow(task["resolved_flow"])
-        ctx = ExecutionContext({"text": "hello"}, _make_env())
+        task = create_task({"text": "hello"}, ["ner_result"])
+        plan = build_execution_plan({"input_data": {"text": "hello"}, "outputs": ["ner_result"]})
+        ctx = {"text": "hello"}
 
         # The flow will fail because HTTP calls go through the tripped breaker
         # But in DEV_MODE, HTTP operator uses mock responses and doesn't go through
         # the breaker. So we patch it to actually use the real client.
-        with patch("src.core.operators.http_operator.Config") as mock_config:
+        with patch("src.core.operators.http_executor.Config") as mock_config:
             mock_config.DEV_MODE = False
             try:
-                result = execute_flow(flow_def, ctx, task["id"])
+                result = run_plan(plan, ctx)
                 # If it doesn't raise, the flow handled the error
                 flow_failed = False
             except (pybreaker.CircuitBreakerError, HttpClientError, Exception) as e:
@@ -357,10 +340,7 @@ class TestCircuitBreakerTrip:
 
         _write_report("test_breaker_trips_mid_flow", report)
 
-        # Either the flow failed (correct) or it was handled
-        # The key point is it didn't hang or corrupt data
         if flow_failed:
-            # Verify task can be marked FAILED
             update_task_status(task["id"], "FAILED",
                                error={"message": "circuit breaker open"})
             actual = get_task(task["id"])

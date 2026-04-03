@@ -186,18 +186,10 @@ else
 fi
 
 # =============================================================================
-# 4. Flow Strategies
+# 4. (Skipped Flow Strategies)
 # =============================================================================
 
-section "4. FLOW STRATEGIES"
-
-FLOWS=$(curl -sf "$API_URL/api/flows" 2>&1) || true
-FLOW_COUNT=$(echo "$FLOWS" | python3 -c "import sys,json; print(json.load(sys.stdin)['count'])" 2>/dev/null || echo "0")
-if [ "$FLOW_COUNT" -gt 0 ]; then
-    pass "GET /api/flows -> $FLOW_COUNT strategies"
-else
-    fail "GET /api/flows -> no strategies"
-fi
+section "4. FLOW STRATEGIES (skipped)"
 
 # =============================================================================
 # 5. Valid Task Creation & Execution
@@ -278,27 +270,27 @@ print('yes' if '$expect_field' in fo else 'no')
 
 # Text -> NER
 test_task "POST text->ner" \
-    '{"input_type":"text","input_data":"John Smith lives in Berlin and works at Google.","desired_output":"ner"}' \
-    "entities"
+    '{"input_data":{"text":"John Smith lives in Berlin and works at Google."},"outputs":["ner_result"]}' \
+    "ner_result"
 
 # Text -> Sentiment
 test_task "POST text->sentiment" \
-    '{"input_type":"text","input_data":"I love this product! It is amazing.","desired_output":"sentiment"}' \
+    '{"input_data":{"text":"I love this product! It is amazing."},"outputs":["sentiment_result"]}' \
     "sentiment"
 
 # Text -> Summary
 test_task "POST text->summary" \
-    '{"input_type":"text","input_data":"Technology is advancing rapidly in all sectors of the economy.","desired_output":"summary"}' \
+    '{"input_data":{"text":"Technology is advancing rapidly in all sectors of the economy."},"outputs":["summary"]}' \
     "summary"
 
 # File upload -> STT
 test_task "POST file->stt" \
-    '{"input_type":"file_upload","input_data":{"file_path":"/tmp/test.mp4"},"desired_output":"stt"}' \
+    '{"input_data":{"file_path":"/tmp/test.mp4"},"outputs":["text"]}' \
     "text"
 
 # YouTube -> STT
 test_task "POST youtube->stt" \
-    '{"input_type":"youtube_link","input_data":"https://youtube.com/watch?v=test123","desired_output":"stt"}' \
+    '{"input_data":{"url":"https://youtube.com/watch?v=test123"},"outputs":["text"]}' \
     "text"
 
 # =============================================================================
@@ -341,7 +333,7 @@ fi
 # Invalid input_type
 RESP=$(curl -sf -w "\n%{http_code}" -X POST "$API_URL/api/tasks" \
     -H "Content-Type: application/json" \
-    -d '{"input_type":"invalid","desired_output":"ner","input_data":"hello"}' 2>&1) || true
+    -d '{"outputs":["ner_result"]}' 2>&1) || true
 HTTP_CODE=$(echo "$RESP" | tail -1)
 if [ "$HTTP_CODE" = "400" ]; then
     pass "POST invalid input_type -> 400"
@@ -352,7 +344,7 @@ fi
 # Invalid desired_output
 RESP=$(curl -sf -w "\n%{http_code}" -X POST "$API_URL/api/tasks" \
     -H "Content-Type: application/json" \
-    -d '{"input_type":"text","desired_output":"nonexistent","input_data":"hello"}' 2>&1) || true
+    -d '{"input_data":{"text":"hello"},"outputs":["nonexistent"]}' 2>&1) || true
 HTTP_CODE=$(echo "$RESP" | tail -1)
 if [ "$HTTP_CODE" = "400" ]; then
     pass "POST invalid desired_output -> 400"
@@ -363,7 +355,7 @@ fi
 # Invalid combination
 RESP=$(curl -sf -w "\n%{http_code}" -X POST "$API_URL/api/tasks" \
     -H "Content-Type: application/json" \
-    -d '{"input_type":"text","desired_output":"stt","input_data":"hello"}' 2>&1) || true
+    -d '{"input_data":{"text":""},"outputs":["ner_result"]}' 2>&1) || true
 HTTP_CODE=$(echo "$RESP" | tail -1)
 if [ "$HTTP_CODE" = "400" ]; then
     pass "POST text->stt (invalid combo) -> 400"
@@ -398,7 +390,7 @@ section "8. TASK DELETION"
 # Create a task, then delete it
 DEL_RESP=$(curl -sf -X POST "$API_URL/api/tasks" \
     -H "Content-Type: application/json" \
-    -d '{"input_type":"text","input_data":"delete me","desired_output":"ner"}' 2>&1) || true
+    -d '{"input_data":{"text":"delete me"},"outputs":["ner_result"]}' 2>&1) || true
 DEL_ID=$(echo "$DEL_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])" 2>/dev/null || echo "")
 
 if [ -n "$DEL_ID" ]; then
@@ -510,6 +502,23 @@ section "FINAL SUMMARY"
 TOTAL=$((PASS_COUNT + FAIL_COUNT + SKIP_COUNT))
 log ""
 log "  Total:   $TOTAL"
+log "  Passed:  $PASS_COUNT"
+log "  Failed:  $FAIL_COUNT"
+log "  Skipped: $SKIP_COUNT"
+log ""
+log "  Report: $REPORT_FILE"
+log "  App log: $APP_LOG"
+log "  Resources: $REPORT_DIR/resource_monitor.csv"
+log ""
+
+if [ "$FAIL_COUNT" -gt 0 ]; then
+    log "  RESULT: FAIL"
+    exit 1
+else
+    log "  RESULT: PASS"
+    exit 0
+fi
+TOTAL"
 log "  Passed:  $PASS_COUNT"
 log "  Failed:  $FAIL_COUNT"
 log "  Skipped: $SKIP_COUNT"

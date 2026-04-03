@@ -66,9 +66,8 @@ class TestBug1EndpointReturnTypes:
             "/api/tasks",
             method="POST",
             json={
-                "input_type": "text",
-                "input_data": "hello",
-                "desired_output": "ner",
+                "input_data": {"text": "hello"},
+                "outputs": ["ner_result"],
             },
             content_type="application/json",
         ):
@@ -76,8 +75,8 @@ class TestBug1EndpointReturnTypes:
             mock_task = {
                 "id": "test-id",
                 "status": "PENDING",
-                "input_type": "text",
-                "desired_output": "ner",
+                "input_data": {"text": "hello"},
+                "outputs": ["ner_result"],
             }
 
             with patch("src.api.endpoints.create_task", return_value=mock_task), \
@@ -94,67 +93,6 @@ class TestBug1EndpointReturnTypes:
         _write_report("test_task_create_returns_dict_tuple", [
             "Verified: _task_create_inner returns (dict, 201)",
             "Not a Flask Response object",
-            "PASS",
-        ])
-
-
-class TestBug2FlowDefinitionInToDict:
-    """Regression: Task.to_dict() must include resolved_flow_definition."""
-
-    def test_to_dict_includes_resolved_flow_definition(self):
-        """Verify the field is present in to_dict() output."""
-        from src.models.task import Task
-        import uuid
-        from datetime import datetime, timezone
-
-        task = Task(
-            id=uuid.uuid4(),
-            input_type="text",
-            input_data={"text": "hello"},
-            desired_output="ner",
-            resolved_flow="flow_text_to_ner",
-            resolved_flow_definition={"flow_id": "flow_text_to_ner", "tasks": []},
-            status="PENDING",
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
-        )
-
-        d = task.to_dict()
-        assert "resolved_flow_definition" in d, \
-            "to_dict() missing resolved_flow_definition — Kafka worker needs this"
-        assert d["resolved_flow_definition"]["flow_id"] == "flow_text_to_ner"
-
-        _write_report("test_to_dict_includes_resolved_flow_definition", [
-            "Bug: Task.to_dict() was missing resolved_flow_definition",
-            "Kafka worker got None when looking up flow def from DB",
-            f"Verified: field present with value {d['resolved_flow_definition']}",
-            "PASS",
-        ])
-
-    def test_to_dict_flow_definition_none_when_not_set(self):
-        """to_dict should handle None gracefully."""
-        from src.models.task import Task
-        import uuid
-        from datetime import datetime, timezone
-
-        task = Task(
-            id=uuid.uuid4(),
-            input_type="text",
-            input_data={"text": "hello"},
-            desired_output="ner",
-            resolved_flow="flow_text_to_ner",
-            resolved_flow_definition=None,
-            status="PENDING",
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
-        )
-
-        d = task.to_dict()
-        assert "resolved_flow_definition" in d
-        assert d["resolved_flow_definition"] is None
-
-        _write_report("test_to_dict_flow_definition_none_when_not_set", [
-            "Verified: to_dict handles None resolved_flow_definition",
             "PASS",
         ])
 

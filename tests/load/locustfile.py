@@ -101,7 +101,7 @@ class AIFlowUser(HttpUser):
     @tag("list")
     @task(2)
     def list_tasks(self):
-        self.client.get("/api/tasks?limit=10")
+        self.client.get("/api/v1/tasks?limit=10")
 
     @tag("flows")
     @task(1)
@@ -112,11 +112,10 @@ class AIFlowUser(HttpUser):
     @task(5)
     def create_text_ner(self):
         text = random.choice(SAMPLE_TEXTS)
-        with self.client.post("/api/tasks",
+        with self.client.post("/api/v1/tasks",
                               json={
-                                  "input_type": "text",
-                                  "input_data": text,
-                                  "desired_output": "sentiment",
+                                  "input_data": {"text": text},
+                                  "outputs": ["ner_result"],
                               },
                               catch_response=True) as resp:
             if resp.status_code == 201:
@@ -131,11 +130,10 @@ class AIFlowUser(HttpUser):
     @task(3)
     def create_text_sentiment(self):
         text = random.choice(SAMPLE_TEXTS)
-        with self.client.post("/api/tasks",
+        with self.client.post("/api/v1/tasks",
                               json={
-                                  "input_type": "text",
-                                  "input_data": text,
-                                  "desired_output": "sentiment",
+                                  "input_data": {"text": text},
+                                  "outputs": ["sentiment_result"],
                               },
                               catch_response=True) as resp:
             if resp.status_code == 201:
@@ -150,11 +148,10 @@ class AIFlowUser(HttpUser):
     @task(2)
     def create_text_summary(self):
         text = random.choice(SAMPLE_TEXTS) * 5
-        with self.client.post("/api/tasks",
+        with self.client.post("/api/v1/tasks",
                               json={
-                                  "input_type": "text",
-                                  "input_data": text,
-                                  "desired_output": "summary",
+                                  "input_data": {"text": text},
+                                  "outputs": ["summary"],
                               },
                               catch_response=True) as resp:
             if resp.status_code == 201:
@@ -165,11 +162,10 @@ class AIFlowUser(HttpUser):
     @tag("create", "file_stt")
     @task(2)
     def create_file_stt(self):
-        with self.client.post("/api/tasks",
+        with self.client.post("/api/v1/tasks",
                               json={
-                                  "input_type": "file_upload",
                                   "input_data": {"file_path": "/tmp/test.mp4"},
-                                  "desired_output": "stt",
+                                  "outputs": ["text"],
                               },
                               catch_response=True) as resp:
             if resp.status_code == 201:
@@ -181,11 +177,10 @@ class AIFlowUser(HttpUser):
     @task(1)
     def create_invalid_task(self):
         """Verify error handling under load."""
-        with self.client.post("/api/tasks",
+        with self.client.post("/api/v1/tasks",
                               json={
-                                  "input_type": "invalid",
-                                  "desired_output": "ner",
-                                  "input_data": "hello",
+                                  "input_data": {"text": "hello"},
+                                  "outputs": ["nonexistent_result"],
                               },
                               catch_response=True) as resp:
             if resp.status_code == 400:
@@ -197,8 +192,8 @@ class AIFlowUser(HttpUser):
         """Poll a task until completion."""
         for _ in range(max_polls):
             time.sleep(1)
-            with self.client.get(f"/api/tasks/{task_id}",
-                                 name="/api/tasks/[id] (poll)",
+            with self.client.get(f"/api/v1/tasks/{task_id}",
+                                 name="/api/v1/tasks/[id] (poll)",
                                  catch_response=True) as resp:
                 if resp.status_code == 200:
                     status = resp.json().get("status", "")

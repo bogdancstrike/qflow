@@ -80,7 +80,7 @@ section "1. KILL POSTGRESQL MID-FLOW"
 log "Creating a task..."
 TASK_RESP=$(curl -sf -X POST "$API_URL/api/tasks" \
     -H "Content-Type: application/json" \
-    -d '{"input_type":"text","input_data":"John Smith in Berlin","desired_output":"ner"}' 2>&1) || true
+    -d '{"input_data":{"text":"John Smith in Berlin"},"outputs":["ner_result"]}' 2>&1) || true
 TASK_ID=$(echo "$TASK_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])" 2>/dev/null || echo "")
 
 if [ -z "$TASK_ID" ]; then
@@ -126,7 +126,7 @@ section "2. KILL KAFKA MID-FLOW"
 log "Creating a task..."
 TASK_RESP=$(curl -sf -X POST "$API_URL/api/tasks" \
     -H "Content-Type: application/json" \
-    -d '{"input_type":"text","input_data":"Test Kafka resilience","desired_output":"sentiment"}' 2>&1) || true
+    -d '{"input_data":{"text":"Test Kafka resilience"},"outputs":["sentiment_result"]}' 2>&1) || true
 TASK_ID=$(echo "$TASK_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])" 2>/dev/null || echo "")
 
 if [ -z "$TASK_ID" ]; then
@@ -155,7 +155,7 @@ else
         # Send a new task to verify Kafka is working
         NEW_RESP=$(curl -sf -w "\n%{http_code}" -X POST "$API_URL/api/tasks" \
             -H "Content-Type: application/json" \
-            -d '{"input_type":"text","input_data":"Post-kafka-recovery test","desired_output":"ner"}' 2>&1) || true
+            -d '{"input_data":{"text":"Post-kafka-recovery test"},"outputs":["ner_result"]}' 2>&1) || true
         HTTP_CODE=$(echo "$NEW_RESP" | tail -1)
         if [ "$HTTP_CODE" = "201" ]; then
             pass "Task creation works after Kafka recovery"
@@ -242,5 +242,8 @@ if [ "$FAIL_COUNT" -gt 0 ]; then
     exit 1
 else
     log "  RESULT: PASS"
+    exit 0
+fi
+ PASS"
     exit 0
 fi

@@ -137,3 +137,61 @@
   Verified: OAM(42, None, 5) -> OffsetAndMetadata(offset=42, metadata=None, leader_epoch=5)
   PASS
 ======================================================================
+
+======================================================================
+  REGRESSION: test_endpoints_return_dicts_not_responses
+  TIME: 2026-04-03 21:36:16
+  Bug: jsonify() returns Flask Response, flask-restx tries to re-serialize it
+  Verified: no jsonify() calls in endpoints.py
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_offset_and_metadata_accepts_two_args
+  TIME: 2026-04-03 21:36:16
+  Bug: QF framework calls OffsetAndMetadata(offset, metadata) with 2 args
+  kafka-python 2.3.0 requires 3 args (offset, metadata, leader_epoch)
+  Fix: namedtuple with defaults=[0] for leader_epoch
+  Verified: OAM(42, None) -> OffsetAndMetadata(offset=42, metadata=None, leader_epoch=0)
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_offset_and_metadata_accepts_three_args
+  TIME: 2026-04-03 21:36:16
+  Verified: OAM(42, None, 5) -> OffsetAndMetadata(offset=42, metadata=None, leader_epoch=5)
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_endpoints_return_dicts_not_responses
+  TIME: 2026-04-03 21:37:43
+  Bug: jsonify() returns Flask Response, flask-restx tries to re-serialize it
+  Verified: no jsonify() calls in endpoints.py
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_task_create_returns_dict_tuple
+  TIME: 2026-04-03 21:37:43
+  Verified: _task_create_inner returns (dict, 201)
+  Not a Flask Response object
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_offset_and_metadata_accepts_two_args
+  TIME: 2026-04-03 21:37:43
+  Bug: QF framework calls OffsetAndMetadata(offset, metadata) with 2 args
+  kafka-python 2.3.0 requires 3 args (offset, metadata, leader_epoch)
+  Fix: namedtuple with defaults=[0] for leader_epoch
+  Verified: OAM(42, None) -> OffsetAndMetadata(offset=42, metadata=None, leader_epoch=0)
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_offset_and_metadata_accepts_three_args
+  TIME: 2026-04-03 21:37:43
+  Verified: OAM(42, None, 5) -> OffsetAndMetadata(offset=42, metadata=None, leader_epoch=5)
+  PASS
+======================================================================

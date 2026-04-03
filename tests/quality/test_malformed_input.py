@@ -8,12 +8,24 @@ import json
 import time
 
 import pytest
+from flask import Flask
 
 os.environ["DEV_MODE"] = "true"
 os.environ["DATABASE_URL"] = "sqlite:///test_malformed.db"
 
-from src.api.validators import validate_task_input
-from src.core.resolver import is_valid_combination
+# Set up simple flask app to route to our endpoint logic
+app = Flask(__name__)
+@app.route("/api/tasks", methods=["POST"])
+def fake_tasks():
+    from src.api.endpoints import _task_create
+    # Because _task_create tries to publish to Kafka, we mock KafkaClient
+    from unittest.mock import patch
+    with patch("framework.streams.kafka_client.KafkaClient"):
+        # and DB create_task
+        with patch("src.api.endpoints.create_task", return_value={"id": "test-id", "status": "PENDING"}):
+            return _task_create()
+
+client = app.test_client()
 
 
 REPORT_FILE = os.path.join(os.path.dirname(__file__), "../../reports/quality_malformed_input.txt")
@@ -34,97 +46,78 @@ class TestMalformedJsonPayloads:
     """Verify validation catches all forms of bad input."""
 
     def test_empty_payload(self):
-        errors = validate_task_input({})
-        assert len(errors) >= 2  # missing input_type and desired_output
-        _write_report("test_empty_payload", [f"Errors: {errors}", "PASS"])
+        resp = client.post("/api/tasks", json={})
+        assert resp.status_code == 400
+        _write_report("test_empty_payload", [f"Status: {resp.status_code}", "PASS"])
 
-    def test_missing_input_type(self):
-        errors = validate_task_input({"desired_output": "ner", "input_data": "hello"})
-        assert any("input_type" in e for e in errors)
-        _write_report("test_missing_input_type", [f"Errors: {errors}", "PASS"])
+    def test_missing_input_data(self):
+        resp = client.post("/api/tasks", json={"outputs": ["ner"]})
+        # Wait, the endpoint uses data.get("input_data", {}) which defaults to {}
+        # Then detect_input_type throws ValueError
+        assert resp.status_code == 400
+        _write_report("test_missing_input_data", [f"Status: {resp.status_code}", "PASS"])
 
-    def test_missing_desired_output(self):
-        errors = validate_task_input({"input_type": "text", "input_data": "hello"})
-        assert any("desired_output" in e for e in errors)
-        _write_report("test_missing_desired_output", [f"Errors: {errors}", "PASS"])
+    def test_missing_outputs(self):
+        resp = client.post("/api/tasks", json={"input_data": {"text": "hello"}})
+        assert resp.status_code == 400
+        _write_report("test_missing_outputs", [f"Status: {resp.status_code}", "PASS"])
 
-    def test_invalid_input_type(self):
-        errors = validate_task_input({
-            "input_type": "invalid_type",
-            "desired_output": "ner",
-            "input_data": "hello",
+    def test_invalid_outputs_format(self):
+        resp = client.post("/api/tasks", json={
+            "input_data": {"text": "hello"},
+            "outputs": "ner"  # Should be a list
         })
-        assert any("Invalid input_type" in e for e in errors)
-        _write_report("test_invalid_input_type", [f"Errors: {errors}", "PASS"])
+        # Currently, if outputs is not a list, validate_outputs or create_task might fail
+        assert resp.status_code == 400
+        _write_report("test_invalid_outputs_format", [f"Status: {resp.status_code}", "PASS"])
 
     def test_invalid_desired_output(self):
-        errors = validate_task_input({
-            "input_type": "text",
-            "desired_output": "nonexistent_output",
-            "input_data": "hello",
+        resp = client.post("/api/tasks", json={
+            "input_data": {"text": "hello"},
+            "outputs": ["nonexistent_output"]
         })
-        assert any("Invalid desired_output" in e for e in errors)
-        _write_report("test_invalid_desired_output", [f"Errors: {errors}", "PASS"])
-
-    def test_invalid_combination(self):
-        """Some input_type + desired_output combos may not be supported."""
-        assert not is_valid_combination("text", "stt")  # text can't be STT'd
-        errors = validate_task_input({
-            "input_type": "text",
-            "desired_output": "stt",
-            "input_data": "hello",
-        })
-        assert len(errors) > 0
-        _write_report("test_invalid_combination", [f"Errors: {errors}", "PASS"])
+        assert resp.status_code == 400
+        _write_report("test_invalid_desired_output", [f"Status: {resp.status_code}", "PASS"])
 
     def test_empty_input_data_text(self):
-        errors = validate_task_input({
-            "input_type": "text",
-            "desired_output": "ner",
-            "input_data": "",
+        resp = client.post("/api/tasks", json={
+            "input_data": {"text": ""},
+            "outputs": ["ner"]
         })
-        assert len(errors) > 0
-        _write_report("test_empty_input_data_text", [f"Errors: {errors}", "PASS"])
+        # Empty text raises error in detect_input_type
+        assert resp.status_code == 400
+        _write_report("test_empty_input_data_text", [f"Status: {resp.status_code}", "PASS"])
 
     def test_null_input_data(self):
-        errors = validate_task_input({
-            "input_type": "text",
-            "desired_output": "ner",
+        resp = client.post("/api/tasks", json={
             "input_data": None,
+            "outputs": ["ner"]
         })
-        assert len(errors) > 0
-        _write_report("test_null_input_data", [f"Errors: {errors}", "PASS"])
+        # Causes AttributeError in data.get or detect_input_type
+        assert resp.status_code == 400
+        _write_report("test_null_input_data", [f"Status: {resp.status_code}", "PASS"])
 
     def test_numeric_input_data(self):
-        errors = validate_task_input({
-            "input_type": "text",
-            "desired_output": "ner",
-            "input_data": 12345,
+        resp = client.post("/api/tasks", json={
+            "input_data": {"text": 12345},
+            "outputs": ["ner"]
         })
-        assert len(errors) > 0
-        _write_report("test_numeric_input_data", [f"Errors: {errors}", "PASS"])
-
-    def test_youtube_with_non_string_input(self):
-        errors = validate_task_input({
-            "input_type": "youtube_link",
-            "desired_output": "stt",
-            "input_data": {"url": "https://youtube.com"},
-        })
-        assert len(errors) > 0
-        _write_report("test_youtube_with_non_string_input", [f"Errors: {errors}", "PASS"])
+        # Fails in sanitize_text_input or detect_input_type
+        assert resp.status_code == 400
+        _write_report("test_numeric_input_data", [f"Status: {resp.status_code}", "PASS"])
 
     def test_extremely_long_input(self):
         """Verify handling of very large text input."""
         large_text = "A" * (10 * 1024 * 1024)  # 10MB string
-        errors = validate_task_input({
-            "input_type": "text",
-            "desired_output": "ner",
-            "input_data": large_text,
+        resp = client.post("/api/tasks", json={
+            "input_data": {"text": large_text},
+            "outputs": ["ner"]
         })
-        # Should either accept or reject gracefully, not crash
+        # Should accept or reject gracefully, not crash
+        assert resp.status_code in (201, 413, 400)
         _write_report("test_extremely_long_input", [
             f"Input size: {len(large_text)} bytes",
-            f"Errors: {errors}",
+            f"Status: {resp.status_code}",
             "PASS (no crash)",
         ])
 
@@ -133,14 +126,14 @@ class TestMalformedJsonPayloads:
         nested = {"a": "value"}
         for _ in range(100):
             nested = {"nested": nested}
-        errors = validate_task_input({
-            "input_type": "text",
-            "desired_output": "ner",
+        resp = client.post("/api/tasks", json={
             "input_data": nested,
+            "outputs": ["ner"]
         })
+        assert resp.status_code == 400
         _write_report("test_nested_json_bomb", [
             "Depth: 100 levels",
-            f"Errors: {errors}",
+            f"Status: {resp.status_code}",
             "PASS (no crash)",
         ])
 
@@ -149,20 +142,17 @@ class TestMalformedJsonPayloads:
         special_inputs = [
             "Hello\x00World",       # null byte
             "Hello\nWorld\tTab",    # control chars
-            "\ud800",               # lone surrogate (if encoding allows)
+            "\ud800",               # lone surrogate
             "' OR 1=1; --",         # SQL injection attempt
             "<script>alert(1)</script>",  # XSS attempt
+            "{{ payload }}",        # Template injection
         ]
         for text in special_inputs:
-            try:
-                errors = validate_task_input({
-                    "input_type": "text",
-                    "desired_output": "ner",
-                    "input_data": text,
-                })
-            except Exception as e:
-                # Acceptable to raise, not acceptable to crash silently
-                pass
+            resp = client.post("/api/tasks", json={
+                "input_data": {"text": text},
+                "outputs": ["ner"]
+            })
+            assert resp.status_code in (201, 400)
         _write_report("test_special_characters_in_input", [
             f"Tested {len(special_inputs)} special inputs",
             "PASS (no crash)",

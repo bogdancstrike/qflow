@@ -41,7 +41,7 @@ class TestDatabaseConnectionFailures:
                 "connection refused", None, None
             )
             with pytest.raises(OperationalError):
-                create_task("text", {"text": "hello"}, "ner")
+                create_task({"text": "hello"}, ["ner_result"])
 
         _write_report("test_create_task_db_down", [
             "Simulated: DB connection refused during create_task",
@@ -118,7 +118,7 @@ class TestDatabaseConnectionFailures:
 
         with patch("src.services.task_service.get_session", return_value=mock_session):
             with pytest.raises(OperationalError):
-                create_task("text", {"text": "hello"}, "ner")
+                create_task({"text": "hello"}, ["ner_result"])
 
         mock_session.rollback.assert_called_once()
         mock_session.close.assert_called_once()

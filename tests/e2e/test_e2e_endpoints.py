@@ -82,8 +82,6 @@ class TestHealthAndMeta:
         code, body = _api("GET", "/api/health")
         assert code == 200
         assert body["status"] == "healthy"
-        assert body["primitives"] > 0
-        assert body["flows"] > 0
         _write_report("test_health", [
             f"Status: {code}",
             f"Body: {json.dumps(body, indent=2)}",
@@ -91,37 +89,24 @@ class TestHealthAndMeta:
             "PASS",
         ])
 
-    def test_flow_strategies(self):
-        code, body = _api("GET", "/api/flows")
-        assert code == 200
-        assert body["count"] > 0
-        strategies = body["strategies"]
-        _write_report("test_flow_strategies", [
-            f"Count: {body['count']}",
-            f"Strategies: {json.dumps(strategies[:5], indent=2)}...",
-            "PASS",
-        ])
-
 
 class TestTaskCreation:
     """Valid task creation and polling."""
 
-    @pytest.mark.parametrize("input_type,input_data,desired_output,expect_field", [
-        ("text", "John Smith lives in Berlin.", "ner", "entities"),
-        ("text", "I love this product!", "sentiment", "sentiment"),
-        ("text", "A long article about tech.", "summary", "summary"),
-        ("file_upload", {"file_path": "/tmp/test.mp4"}, "stt", "text"),
-        ("youtube_link", "https://youtube.com/watch?v=test", "stt", "text"),
+    @pytest.mark.parametrize("input_data,outputs,expect_field", [
+        ({"text": "John Smith lives in Berlin."}, ["ner_result"], "ner_result"),
+        ({"text": "I love this product!"}, ["sentiment_result"], "sentiment_result"),
+        ({"text": "A long article about tech."}, ["summary"], "summary"),
+        ({"file_path": "/tmp/test.mp4"}, ["text"], "text"),
+        ({"url": "https://youtube.com/watch?v=test"}, ["text"], "text"),
     ])
-    def test_create_and_poll(self, input_type, input_data, desired_output,
-                             expect_field, created_task_ids):
+    def test_create_and_poll(self, input_data, outputs, expect_field, created_task_ids):
         start = time.time()
 
         # Create
-        code, body = _api("POST", "/api/tasks", json={
-            "input_type": input_type,
+        code, body = _api("POST", "/api/v1/tasks", json={
             "input_data": input_data,
-            "desired_output": desired_output,
+            "outputs": outputs,
         })
         create_time = time.time() - start
 
@@ -129,7 +114,6 @@ class TestTaskCreation:
         task_id = body["id"]
         created_task_ids.append(task_id)
         assert body["status"] == "PENDING"
-        assert body["resolved_flow"] is not None
 
         # Poll for completion
         poll_start = time.time()
@@ -137,7 +121,7 @@ class TestTaskCreation:
         task_body = None
         for _ in range(60):
             time.sleep(0.5)
-            poll_code, task_body = _api("GET", f"/api/tasks/{task_id}")
+            poll_code, task_body = _api("GET", f"/api/v1/tasks/{task_id}")
             assert poll_code == 200
             status = task_body["status"]
             if status in ("COMPLETED", "FAILED", "TERMINATED"):
@@ -147,9 +131,8 @@ class TestTaskCreation:
         total_time = time.time() - start
 
         report_lines = [
-            f"Task: {input_type} -> {desired_output}",
+            f"Task: {input_data} -> {outputs}",
             f"Task ID: {task_id}",
-            f"Flow: {body['resolved_flow']}",
             f"Create time: {create_time:.2f}s",
             f"Poll time: {poll_time:.2f}s",
             f"Total time: {total_time:.2f}s",
@@ -167,7 +150,7 @@ class TestTaskCreation:
             report_lines.append(f"Error: {task_body.get('error')}")
             report_lines.append("FAIL")
 
-        _write_report(f"test_create_and_poll_{input_type}_{desired_output}", report_lines)
+        _write_report(f"test_create_and_poll_{outputs[0]}", report_lines)
         assert status == "COMPLETED", f"Task {task_id} ended with status={status}"
 
 
@@ -175,23 +158,22 @@ class TestTaskList:
     """Task listing and filtering."""
 
     def test_list_all(self, created_task_ids):
-        code, body = _api("GET", "/api/tasks")
+        code, body = _api("GET", "/api/v1/tasks")
         assert code == 200
-        assert body["count"] >= 0
+        assert "tasks" in body
         _write_report("test_list_all", [
-            f"Count: {body['count']}",
-            f"Limit: {body['limit']}",
+            f"Count (returned): {len(body['tasks'])}",
             "PASS",
         ])
 
     def test_list_with_filters(self):
-        code, body = _api("GET", "/api/tasks?status=COMPLETED&limit=5")
+        code, body = _api("GET", "/api/v1/tasks?status=COMPLETED&limit=5")
         assert code == 200
         for t in body["tasks"]:
             assert t["status"] == "COMPLETED"
         _write_report("test_list_with_filters", [
             f"Filter: status=COMPLETED, limit=5",
-            f"Count: {body['count']}",
+            f"Returned: {len(body['tasks'])} tasks",
             "PASS",
         ])
 
@@ -200,54 +182,42 @@ class TestInvalidRequests:
     """Error handling for invalid requests."""
 
     def test_empty_body(self):
-        code, body = _api("POST", "/api/tasks", json={})
+        code, body = _api("POST", "/api/v1/tasks", json={})
         assert code == 400
         assert "errors" in body or "message" in body
         _write_report("test_empty_body", [f"Status: {code}", f"Body: {body}", "PASS"])
 
-    def test_invalid_input_type(self):
-        code, body = _api("POST", "/api/tasks", json={
-            "input_type": "invalid",
-            "desired_output": "ner",
-            "input_data": "hello",
+    def test_invalid_input_data(self):
+        code, body = _api("POST", "/api/v1/tasks", json={
+            "outputs": ["ner_result"],
         })
         assert code == 400
         _write_report("test_invalid_input_type", [f"Status: {code}", f"Body: {body}", "PASS"])
 
-    def test_invalid_desired_output(self):
-        code, body = _api("POST", "/api/tasks", json={
-            "input_type": "text",
-            "desired_output": "nonexistent",
-            "input_data": "hello",
+    def test_invalid_outputs(self):
+        code, body = _api("POST", "/api/v1/tasks", json={
+            "input_data": {"text": "hello"},
+            "outputs": ["nonexistent_output"],
         })
         assert code == 400
-        _write_report("test_invalid_desired_output", [f"Status: {code}", f"Body: {body}", "PASS"])
-
-    def test_invalid_combination(self):
-        code, body = _api("POST", "/api/tasks", json={
-            "input_type": "text",
-            "desired_output": "stt",
-            "input_data": "hello",
-        })
-        assert code == 400
-        _write_report("test_invalid_combination", [f"Status: {code}", f"Body: {body}", "PASS"])
+        _write_report("test_invalid_outputs", [f"Status: {code}", f"Body: {body}", "PASS"])
 
     def test_nonexistent_task(self):
         fake_id = str(uuid.uuid4())
-        code, body = _api("GET", f"/api/tasks/{fake_id}")
+        code, body = _api("GET", f"/api/v1/tasks/{fake_id}")
         assert code == 404
         _write_report("test_nonexistent_task", [f"Status: {code}", f"Body: {body}", "PASS"])
 
     def test_delete_nonexistent_task(self):
         fake_id = str(uuid.uuid4())
-        code, body = _api("DELETE", f"/api/tasks/{fake_id}")
+        code, body = _api("DELETE", f"/api/v1/tasks/{fake_id}")
         assert code == 404
         _write_report("test_delete_nonexistent", [f"Status: {code}", f"Body: {body}", "PASS"])
 
     def test_malformed_json(self):
         """Send non-JSON body."""
         resp = requests.post(
-            f"{API_URL}/api/tasks",
+            f"{API_URL}/api/v1/tasks",
             data="this is not json",
             headers={"Content-Type": "application/json"},
             timeout=10,
@@ -261,20 +231,19 @@ class TestTaskDeletion:
 
     def test_create_and_delete(self):
         # Create
-        code, body = _api("POST", "/api/tasks", json={
-            "input_type": "text",
-            "input_data": "delete me",
-            "desired_output": "ner",
+        code, body = _api("POST", "/api/v1/tasks", json={
+            "input_data": {"text": "delete me"},
+            "outputs": ["ner_result"],
         })
         assert code == 201
         task_id = body["id"]
 
         # Delete
-        code, body = _api("DELETE", f"/api/tasks/{task_id}")
+        code, body = _api("DELETE", f"/api/v1/tasks/{task_id}")
         assert code == 200
 
         # Verify gone
-        code, body = _api("GET", f"/api/tasks/{task_id}")
+        code, body = _api("GET", f"/api/v1/tasks/{task_id}")
         assert code == 404
 
         _write_report("test_create_and_delete", [

@@ -14,6 +14,9 @@ def create_task(input_data: dict, outputs: list) -> dict:
         session.add(task)
         session.commit()
         return task.to_dict()
+    except Exception:
+        session.rollback()
+        raise
     finally:
         session.close()
 
@@ -22,6 +25,9 @@ def get_task(task_id: str) -> dict:
     try:
         task = session.query(Task).filter(Task.id == task_id).first()
         return task.to_dict() if task else None
+    except Exception:
+        session.rollback()
+        raise
     finally:
         session.close()
 
@@ -42,6 +48,9 @@ def update_task_status(task_id: str, status: str, step_results: dict = None, wor
             session.commit()
             return task.to_dict()
         return None
+    except Exception:
+        session.rollback()
+        raise
     finally:
         session.close()
 
@@ -85,6 +94,9 @@ def list_tasks(status: str = None, limit: int = 50, cursor: str = None, sort: st
             "next_cursor": next_cursor,
             "has_more": has_more
         }
+    except Exception:
+        session.rollback()
+        raise
     finally:
         session.close()
 
@@ -97,6 +109,9 @@ def delete_task(task_id: str) -> bool:
             session.commit()
             return True
         return False
+    except Exception:
+        session.rollback()
+        raise
     finally:
         session.close()
 
