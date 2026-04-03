@@ -16,6 +16,9 @@ Environment variables of interest
   API_PORT                   — HTTP listen port (default: 5000)
 """
 
+import gevent.monkey
+gevent.monkey.patch_all()
+
 import os
 import sys
 from pathlib import Path
@@ -54,11 +57,6 @@ def main():
     except Exception as e:
         logger.warning(f"[AI-FLOW] Could not initialize DB (will retry on first use): {e}")
 
-    # Initialize template/flow registry
-    from src.templating.registry import init_registry
-    init_registry(str(BASE_DIR))
-    logger.info("[AI-FLOW] Template registry initialized")
-
     settings = FrameworkSettings(
         enable_etl=True,
         enable_api=True,
@@ -72,7 +70,7 @@ def main():
 
         endpoint_json_path="maps/endpoint.json",
 
-        worker_modules=["workers.flow_executor", "core.subflow_workers"],
+        worker_modules=["workers.flow_executor"],
         kafka_bootstrap_servers=Config.KAFKA_BOOTSTRAP_SERVERS,
         consumer_name=Config.WORKER_NAME,
 
