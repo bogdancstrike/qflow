@@ -14,10 +14,14 @@ Environment variables of interest
   KAFKA_BOOTSTRAP_SERVERS    — Kafka broker address (default: localhost:9094)
   DATABASE_URL               — PostgreSQL connection string
   API_PORT                   — HTTP listen port (default: 5000)
+  DRAIN_TIMEOUT_SEC          — graceful shutdown drain timeout (default: 30)
 """
 
 import os
+import signal
 import sys
+import threading
+import time
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -38,6 +42,70 @@ from src.config import Config
 from framework.app import FrameworkApp, FrameworkSettings
 from framework.commons.logger import logger
 
+# ---------------------------------------------------------------------------
+# Graceful shutdown coordinator
+# ---------------------------------------------------------------------------
+
+_shutdown_event = threading.Event()
+_active_greenlets = []  # tracked for drain-then-kill
+DRAIN_TIMEOUT = int(os.getenv("DRAIN_TIMEOUT_SEC", "30"))
+
+
+def _signal_handler(signum, frame):
+    """Handle SIGTERM/SIGINT for graceful shutdown."""
+    sig_name = signal.Signals(signum).name
+    logger.info(f"[SHUTDOWN] Received {sig_name} — initiating graceful shutdown")
+    _shutdown_event.set()
+
+
+def _graceful_shutdown(fw: FrameworkApp):
+    """Execute the shutdown sequence:
+    1. Stop accepting new Kafka messages
+    2. Drain in-flight tasks (with timeout)
+    3. Force-cancel remaining greenlets
+    4. Close connections
+    """
+    logger.info("[SHUTDOWN] Phase 1: Stopping Kafka consumer...")
+    # The ETL thread is daemon — it will be interrupted when the main process exits.
+    # But we try to signal it to stop first.
+    try:
+        fw.shutdown()
+    except Exception as e:
+        logger.warning(f"[SHUTDOWN] Framework shutdown call: {e}")
+
+    logger.info(f"[SHUTDOWN] Phase 2: Draining in-flight tasks (timeout={DRAIN_TIMEOUT}s)...")
+    deadline = time.time() + DRAIN_TIMEOUT
+
+    # Wait for active greenlets to finish
+    try:
+        import gevent
+        while _active_greenlets and time.time() < deadline:
+            remaining = [g for g in _active_greenlets if not g.dead]
+            if not remaining:
+                break
+            _active_greenlets[:] = remaining
+            gevent.sleep(0.5)
+
+        # Force-kill remaining
+        remaining = [g for g in _active_greenlets if not g.dead]
+        if remaining:
+            logger.warning(f"[SHUTDOWN] Phase 3: Force-killing {len(remaining)} greenlet(s)")
+            for g in remaining:
+                g.kill(block=False)
+    except ImportError:
+        pass
+
+    logger.info("[SHUTDOWN] Phase 4: Closing database connections...")
+    try:
+        from src.models.task import get_engine
+        engine = get_engine()
+        engine.dispose()
+    except Exception as e:
+        logger.warning(f"[SHUTDOWN] DB cleanup: {e}")
+
+    logger.info("[SHUTDOWN] Shutdown complete")
+
+
 def main():
     logger.info(
         f"[AI-FLOW] Starting — dev_mode={Config.DEV_MODE} "
@@ -45,6 +113,10 @@ def main():
         f"kafka={Config.KAFKA_BOOTSTRAP_SERVERS} "
         f"api_port={Config.API_PORT}"
     )
+
+    # Register signal handlers
+    signal.signal(signal.SIGTERM, _signal_handler)
+    signal.signal(signal.SIGINT, _signal_handler)
 
     # Initialize DB tables
     from src.models.task import init_db
@@ -86,7 +158,16 @@ def main():
 
     if handles.app:
         logger.info(f"[AI-FLOW] API listening on {settings.api_host}:{settings.api_port}")
-        handles.app.run(host=settings.api_host, port=settings.api_port, debug=False)
+
+        try:
+            handles.app.run(host=settings.api_host, port=settings.api_port, debug=False)
+        except (KeyboardInterrupt, SystemExit):
+            pass
+        finally:
+            if _shutdown_event.is_set():
+                _graceful_shutdown(fw)
+            else:
+                logger.info("[AI-FLOW] Exiting")
 
 
 if __name__ == "__main__":

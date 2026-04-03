@@ -11,7 +11,84 @@
   "endpoints": [
     {
       "namespace": "api",
-      "operation_name": "tasks",
+      "operation_name": "v1_tasks",
+      "model_name": "Empty",
+      "request_method": ["POST", "GET"],
+      "api_url": "/v1/tasks",
+      "exec_method": {
+        "module_name": "api.endpoints",
+        "method_name": "tasks_handler"
+      }
+    },
+    {
+      "namespace": "api",
+      "operation_name": "v1_task_detail",
+      "model_name": "Empty",
+      "request_method": ["GET", "DELETE"],
+      "api_url": "/v1/tasks/<task_id>",
+      "exec_method": {
+        "module_name": "api.endpoints",
+        "method_name": "task_detail_handler"
+      }
+    },
+    {
+      "namespace": "api",
+      "operation_name": "v1_task_logs",
+      "model_name": "Empty",
+      "request_method": ["GET"],
+      "api_url": "/v1/tasks/<task_id>/logs",
+      "exec_method": {
+        "module_name": "api.endpoints",
+        "method_name": "task_step_logs_handler"
+      }
+    },
+    {
+      "namespace": "api",
+      "operation_name": "v1_flows",
+      "model_name": "Empty",
+      "request_method": ["GET"],
+      "api_url": "/v1/flows",
+      "exec_method": {
+        "module_name": "api.endpoints",
+        "method_name": "flow_strategies"
+      }
+    },
+    {
+      "namespace": "api",
+      "operation_name": "liveness",
+      "model_name": "Empty",
+      "request_method": ["GET"],
+      "api_url": "/liveness",
+      "exec_method": {
+        "module_name": "api.endpoints",
+        "method_name": "liveness"
+      }
+    },
+    {
+      "namespace": "api",
+      "operation_name": "readiness",
+      "model_name": "Empty",
+      "request_method": ["GET"],
+      "api_url": "/readiness",
+      "exec_method": {
+        "module_name": "api.endpoints",
+        "method_name": "readiness"
+      }
+    },
+    {
+      "namespace": "api",
+      "operation_name": "health",
+      "model_name": "Empty",
+      "request_method": ["GET"],
+      "api_url": "/health",
+      "exec_method": {
+        "module_name": "api.endpoints",
+        "method_name": "health_check"
+      }
+    },
+    {
+      "namespace": "api",
+      "operation_name": "tasks_legacy",
       "model_name": "Empty",
       "request_method": ["POST", "GET"],
       "api_url": null,
@@ -22,35 +99,13 @@
     },
     {
       "namespace": "api",
-      "operation_name": "task_detail",
+      "operation_name": "task_detail_legacy",
       "model_name": "Empty",
       "request_method": ["GET", "DELETE"],
       "api_url": "/tasks/<task_id>",
       "exec_method": {
         "module_name": "api.endpoints",
         "method_name": "task_detail_handler"
-      }
-    },
-    {
-      "namespace": "api",
-      "operation_name": "health",
-      "model_name": "Empty",
-      "request_method": ["GET"],
-      "api_url": null,
-      "exec_method": {
-        "module_name": "api.endpoints",
-        "method_name": "health_check"
-      }
-    },
-    {
-      "namespace": "api",
-      "operation_name": "flows",
-      "model_name": "Empty",
-      "request_method": ["GET"],
-      "api_url": null,
-      "exec_method": {
-        "module_name": "api.endpoints",
-        "method_name": "flow_strategies"
       }
     }
   ]
