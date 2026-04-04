@@ -36,3 +36,60 @@
   Failures: 0
   Elapsed: 5.01s
 ======================================================================
+
+======================================================================
+  TEST: test_10_parallel_text_ner_tasks
+  TIME: 2026-04-04 09:43:42
+  Parallel tasks: 10
+  Successes: 10
+  Failures: 0
+  Elapsed: 4.05s
+======================================================================
+
+======================================================================
+  TEST: test_mixed_parallel_tasks
+  TIME: 2026-04-04 09:43:49
+  Mixed parallel tasks: 5
+  Types: [('text', 'ner'), ('text', 'sentiment'), ('text', 'summary'), ('file_upload', 'stt'), ('file_upload', 'ner')]
+  Successes: 5
+  Failures: 0
+  Elapsed: 6.08s
+======================================================================
+
+======================================================================
+  TEST: test_10_parallel_text_ner_tasks
+  TIME: 2026-04-04 09:44:26
+  Parallel tasks: 10
+  Successes: 10
+  Failures: 0
+  Elapsed: 4.31s
+======================================================================
+
+======================================================================
+  TEST: test_mixed_parallel_tasks
+  TIME: 2026-04-04 09:44:32
+  Mixed parallel tasks: 5
+  Types: [('text', 'ner'), ('text', 'sentiment'), ('text', 'summary'), ('file_upload', 'stt'), ('file_upload', 'ner')]
+  Successes: 5
+  Failures: 0
+  Elapsed: 6.02s
+======================================================================
+
+======================================================================
+  TEST: test_10_parallel_text_ner_tasks
+  TIME: 2026-04-04 09:52:45
+  Parallel tasks: 10
+  Successes: 10
+  Failures: 0
+  Elapsed: 5.41s
+======================================================================
+
+======================================================================
+  TEST: test_mixed_parallel_tasks
+  TIME: 2026-04-04 09:52:50
+  Mixed parallel tasks: 5
+  Types: [('text', 'ner'), ('text', 'sentiment'), ('text', 'summary'), ('file_upload', 'stt'), ('file_upload', 'ner')]
+  Successes: 5
+  Failures: 0
+  Elapsed: 5.58s
+======================================================================

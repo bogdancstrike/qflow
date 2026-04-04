@@ -165,14 +165,14 @@ class TestTaskLifecycle:
         create_task("text", {"text": "World"}, "sentiment")
         create_task("file_upload", {"file_path": "/tmp/test.mp4"}, "stt")
 
-        all_tasks = list_tasks()
-        assert len(all_tasks) == 3
+        all_result = list_tasks()
+        assert len(all_result["tasks"]) == 3
 
-        ner_tasks = list_tasks(desired_output="ner")
-        assert len(ner_tasks) == 1
+        ner_result = list_tasks(desired_output="ner")
+        assert len(ner_result["tasks"]) == 1
 
-        text_tasks = list_tasks(input_type="text")
-        assert len(text_tasks) == 2
+        text_result = list_tasks(input_type="text")
+        assert len(text_result["tasks"]) == 2
         print(f"\n  [OK] Task filtering: 3 total, 1 ner, 2 text")
 
     def test_delete_task(self):

@@ -94,3 +94,195 @@
   Result: {'error': 'task not found'}
   PASS
 ======================================================================
+
+======================================================================
+  TEST: test_kafka_timeout_during_publish
+  TIME: 2026-04-04 09:43:49
+  Simulated: KafkaClient.put_message raises TimeoutError
+  Expected: Error logged, task still in DB as PENDING
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_kafka_connection_refused
+  TIME: 2026-04-04 09:43:49
+  Simulated: KafkaClient() raises ConnectionRefusedError
+  Expected: Error logged, task still in DB as PENDING
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_flow_executor_missing_task_id
+  TIME: 2026-04-04 09:43:49
+  Sent message without task_id to flow_executor
+  Result: {'error': 'missing task_id'}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_flow_executor_task_not_in_db
+  TIME: 2026-04-04 09:43:49
+  Sent nonexistent task_id to flow_executor
+  Result: {'error': 'task not found'}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_publish_fails_when_kafka_down
+  TIME: 2026-04-04 09:44:32
+  Simulated: KafkaClient.put_message raises NoBrokersAvailable
+  Result: _publish_to_kafka caught exception, did not raise
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_kafka_timeout_during_publish
+  TIME: 2026-04-04 09:44:32
+  Simulated: KafkaClient.put_message raises TimeoutError
+  Expected: Error logged, task still in DB as PENDING
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_kafka_connection_refused
+  TIME: 2026-04-04 09:44:32
+  Simulated: KafkaClient() raises ConnectionRefusedError
+  Expected: Error logged, task still in DB as PENDING
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_flow_executor_missing_task_id
+  TIME: 2026-04-04 09:44:32
+  Sent message without task_id to flow_executor
+  Result: {'error': 'missing task_id'}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_flow_executor_task_not_in_db
+  TIME: 2026-04-04 09:44:32
+  Sent nonexistent task_id to flow_executor
+  Result: {'error': 'task not found'}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_publish_fails_when_kafka_down
+  TIME: 2026-04-04 09:49:41
+  Simulated: KafkaClient.put_message raises NoBrokersAvailable
+  Result: _publish_to_kafka caught exception, did not raise
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_kafka_timeout_during_publish
+  TIME: 2026-04-04 09:49:41
+  Simulated: KafkaClient.put_message raises TimeoutError
+  Expected: Error logged, task still in DB as PENDING
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_kafka_connection_refused
+  TIME: 2026-04-04 09:49:41
+  Simulated: KafkaClient() raises ConnectionRefusedError
+  Expected: Error logged, task still in DB as PENDING
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_flow_executor_missing_task_id
+  TIME: 2026-04-04 09:49:41
+  Sent message without task_id to flow_executor
+  Result: {'error': 'missing task_id'}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_flow_executor_task_not_in_db
+  TIME: 2026-04-04 09:49:41
+  Sent nonexistent task_id to flow_executor
+  Result: {'error': 'task not found'}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_publish_fails_when_kafka_down
+  TIME: 2026-04-04 09:50:46
+  Simulated: KafkaClient.put_message raises NoBrokersAvailable
+  Result: _publish_to_kafka caught exception, did not raise
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_kafka_timeout_during_publish
+  TIME: 2026-04-04 09:50:46
+  Simulated: KafkaClient.put_message raises TimeoutError
+  Expected: Error logged, task still in DB as PENDING
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_kafka_connection_refused
+  TIME: 2026-04-04 09:50:46
+  Simulated: KafkaClient() raises ConnectionRefusedError
+  Expected: Error logged, task still in DB as PENDING
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_flow_executor_missing_task_id
+  TIME: 2026-04-04 09:50:46
+  Sent message without task_id to flow_executor
+  Result: {'error': 'missing task_id'}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_flow_executor_task_not_in_db
+  TIME: 2026-04-04 09:50:46
+  Sent nonexistent task_id to flow_executor
+  Result: {'error': 'task not found'}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_publish_fails_when_kafka_down
+  TIME: 2026-04-04 09:52:51
+  Simulated: KafkaClient.put_message raises NoBrokersAvailable
+  Result: _publish_to_kafka caught exception, did not raise
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_kafka_timeout_during_publish
+  TIME: 2026-04-04 09:52:51
+  Simulated: KafkaClient.put_message raises TimeoutError
+  Expected: Error logged, task still in DB as PENDING
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_kafka_connection_refused
+  TIME: 2026-04-04 09:52:51
+  Simulated: KafkaClient() raises ConnectionRefusedError
+  Expected: Error logged, task still in DB as PENDING
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_flow_executor_missing_task_id
+  TIME: 2026-04-04 09:52:51
+  Sent message without task_id to flow_executor
+  Result: {'error': 'missing task_id'}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_flow_executor_task_not_in_db
+  TIME: 2026-04-04 09:52:51
+  Sent nonexistent task_id to flow_executor
+  Result: {'error': 'task not found'}
+  PASS
+======================================================================

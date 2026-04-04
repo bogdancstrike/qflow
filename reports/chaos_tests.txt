@@ -82,3 +82,171 @@
   Next call succeeded
   PASS
 ======================================================================
+
+======================================================================
+  TEST: test_db_dies_during_status_update
+  TIME: 2026-04-04 09:44:35
+  Task 4f1c86cb-1da7-4b04-9944-00a3d319d120: flow executed successfully
+  DB died during update_task_status -> OperationalError raised
+  Task status in DB: PENDING (still PENDING, recoverable)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_db_dies_during_task_creation
+  TIME: 2026-04-04 09:44:35
+  DB died during commit in create_task
+  OperationalError raised, rollback called
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_db_intermittent_failure_recovery
+  TIME: 2026-04-04 09:44:35
+  Task b7a66852-2e34-4b85-9347-9f0afd34d956: DB failed intermittently
+  Status went PENDING -> RUNNING -> (fail) -> COMPLETED
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_kafka_publish_failure_task_stays_pending
+  TIME: 2026-04-04 09:44:35
+  Task af1df240-d9b6-4b2e-ba03-9288a3d68e77: created in DB
+  Kafka publish failed -> task stays PENDING
+  Task is recoverable (can be re-published to Kafka)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_kafka_output_failure_task_still_completed_in_db
+  TIME: 2026-04-04 09:44:39
+  Task fba3a854-df05-48d4-aee0-636bef759548: flow executed, DB updated to COMPLETED
+  Even if Kafka output fails, DB has the result
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_http_timeout_propagates
+  TIME: 2026-04-04 09:44:41
+  Simulated: HTTP request timeout after 120s
+  HttpClientError raised with timeout message
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_slow_service_retries_then_fails
+  TIME: 2026-04-04 09:44:43
+  Attempts: 3
+  Elapsed: 2.00s
+  All 3 retries timed out -> HttpClientError raised
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_slow_service_succeeds_on_retry
+  TIME: 2026-04-04 09:44:44
+  Attempts: 2
+  First attempt: timeout, Second attempt: success
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_breaker_trips_mid_flow
+  TIME: 2026-04-04 09:44:50
+  Breaker state: open
+  Flow failed: True
+  Error: Timeout not elapsed yet, circuit breaker still open
+  PASS (breaker correctly blocked requests)
+======================================================================
+
+======================================================================
+  TEST: test_breaker_recovers_flow_succeeds
+  TIME: 2026-04-04 09:44:51
+  Tripped breaker -> open -> waited 1.5s -> closed
+  Next call succeeded
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_db_dies_during_status_update
+  TIME: 2026-04-04 09:52:55
+  Task a85c9f8b-edef-43c0-a4b8-920761ea4824: flow executed successfully
+  DB died during update_task_status -> OperationalError raised
+  Task status in DB: PENDING (still PENDING, recoverable)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_db_dies_during_task_creation
+  TIME: 2026-04-04 09:52:55
+  DB died during commit in create_task
+  OperationalError raised, rollback called
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_db_intermittent_failure_recovery
+  TIME: 2026-04-04 09:52:55
+  Task 4bf8065c-d144-403d-93d1-88d09458b64c: DB failed intermittently
+  Status went PENDING -> RUNNING -> (fail) -> COMPLETED
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_kafka_publish_failure_task_stays_pending
+  TIME: 2026-04-04 09:52:55
+  Task 51255f83-d277-4752-a9dd-5bebd04b4f5d: created in DB
+  Kafka publish failed -> task stays PENDING
+  Task is recoverable (can be re-published to Kafka)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_kafka_output_failure_task_still_completed_in_db
+  TIME: 2026-04-04 09:52:59
+  Task cc9e37e3-d235-440b-89a4-2a60ecf2ec24: flow executed, DB updated to COMPLETED
+  Even if Kafka output fails, DB has the result
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_http_timeout_propagates
+  TIME: 2026-04-04 09:53:01
+  Simulated: HTTP request timeout after 120s
+  HttpClientError raised with timeout message
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_slow_service_retries_then_fails
+  TIME: 2026-04-04 09:53:03
+  Attempts: 3
+  Elapsed: 2.00s
+  All 3 retries timed out -> HttpClientError raised
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_slow_service_succeeds_on_retry
+  TIME: 2026-04-04 09:53:04
+  Attempts: 2
+  First attempt: timeout, Second attempt: success
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_breaker_trips_mid_flow
+  TIME: 2026-04-04 09:53:10
+  Breaker state: open
+  Flow failed: True
+  Error: Timeout not elapsed yet, circuit breaker still open
+  PASS (breaker correctly blocked requests)
+======================================================================
+
+======================================================================
+  TEST: test_breaker_recovers_flow_succeeds
+  TIME: 2026-04-04 09:53:12
+  Tripped breaker -> open -> waited 1.5s -> closed
+  Next call succeeded
+  PASS
+======================================================================

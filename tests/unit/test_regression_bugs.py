@@ -57,13 +57,13 @@ class TestBug1EndpointReturnTypes:
         ])
 
     def test_task_create_returns_dict_tuple(self):
-        """Verify _task_create_inner returns (dict, int) not Response."""
+        """Verify _task_create_legacy returns (dict, int) not Response."""
         from unittest.mock import patch, MagicMock
         from flask import Flask
 
         app = Flask(__name__)
         with app.test_request_context(
-            "/api/tasks",
+            "/api/v1/tasks",
             method="POST",
             json={
                 "input_type": "text",
@@ -78,12 +78,16 @@ class TestBug1EndpointReturnTypes:
                 "status": "PENDING",
                 "input_type": "text",
                 "desired_output": "ner",
+                "outputs": ["ner"],
             }
 
             with patch("src.api.endpoints.create_task", return_value=mock_task), \
                  patch("framework.streams.kafka_client.KafkaClient"):
-                from src.api.endpoints import _task_create_inner
-                result = _task_create_inner(mock_span)
+                from src.api.endpoints import _task_create_legacy
+                result = _task_create_legacy(
+                    {"input_type": "text", "input_data": "hello", "desired_output": "ner"},
+                    mock_span,
+                )
 
             # Should be (dict, 201) not a Response object
             assert isinstance(result, tuple), f"Expected tuple, got {type(result)}"
@@ -92,7 +96,7 @@ class TestBug1EndpointReturnTypes:
             assert code == 201
 
         _write_report("test_task_create_returns_dict_tuple", [
-            "Verified: _task_create_inner returns (dict, 201)",
+            "Verified: _task_create_legacy returns (dict, 201)",
             "Not a Flask Response object",
             "PASS",
         ])

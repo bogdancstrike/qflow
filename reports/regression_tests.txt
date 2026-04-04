@@ -137,3 +137,240 @@
   Verified: OAM(42, None, 5) -> OffsetAndMetadata(offset=42, metadata=None, leader_epoch=5)
   PASS
 ======================================================================
+
+======================================================================
+  REGRESSION: test_endpoints_return_dicts_not_responses
+  TIME: 2026-04-04 09:42:47
+  Bug: jsonify() returns Flask Response, flask-restx tries to re-serialize it
+  Verified: no jsonify() calls in endpoints.py
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_to_dict_includes_resolved_flow_definition
+  TIME: 2026-04-04 09:42:47
+  Bug: Task.to_dict() was missing resolved_flow_definition
+  Kafka worker got None when looking up flow def from DB
+  Verified: field present with value {'flow_id': 'flow_text_to_ner', 'tasks': []}
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_to_dict_flow_definition_none_when_not_set
+  TIME: 2026-04-04 09:42:47
+  Verified: to_dict handles None resolved_flow_definition
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_offset_and_metadata_accepts_two_args
+  TIME: 2026-04-04 09:42:47
+  Bug: QF framework calls OffsetAndMetadata(offset, metadata) with 2 args
+  kafka-python 2.3.0 requires 3 args (offset, metadata, leader_epoch)
+  Fix: namedtuple with defaults=[0] for leader_epoch
+  Verified: OAM(42, None) -> OffsetAndMetadata(offset=42, metadata=None, leader_epoch=0)
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_offset_and_metadata_accepts_three_args
+  TIME: 2026-04-04 09:42:47
+  Verified: OAM(42, None, 5) -> OffsetAndMetadata(offset=42, metadata=None, leader_epoch=5)
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_endpoints_return_dicts_not_responses
+  TIME: 2026-04-04 09:43:19
+  Bug: jsonify() returns Flask Response, flask-restx tries to re-serialize it
+  Verified: no jsonify() calls in endpoints.py
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_task_create_returns_dict_tuple
+  TIME: 2026-04-04 09:43:19
+  Verified: _task_create_legacy returns (dict, 201)
+  Not a Flask Response object
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_to_dict_includes_resolved_flow_definition
+  TIME: 2026-04-04 09:43:19
+  Bug: Task.to_dict() was missing resolved_flow_definition
+  Kafka worker got None when looking up flow def from DB
+  Verified: field present with value {'flow_id': 'flow_text_to_ner', 'tasks': []}
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_to_dict_flow_definition_none_when_not_set
+  TIME: 2026-04-04 09:43:19
+  Verified: to_dict handles None resolved_flow_definition
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_offset_and_metadata_accepts_two_args
+  TIME: 2026-04-04 09:43:19
+  Bug: QF framework calls OffsetAndMetadata(offset, metadata) with 2 args
+  kafka-python 2.3.0 requires 3 args (offset, metadata, leader_epoch)
+  Fix: namedtuple with defaults=[0] for leader_epoch
+  Verified: OAM(42, None) -> OffsetAndMetadata(offset=42, metadata=None, leader_epoch=0)
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_offset_and_metadata_accepts_three_args
+  TIME: 2026-04-04 09:43:19
+  Verified: OAM(42, None, 5) -> OffsetAndMetadata(offset=42, metadata=None, leader_epoch=5)
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_endpoints_return_dicts_not_responses
+  TIME: 2026-04-04 09:48:49
+  Bug: jsonify() returns Flask Response, flask-restx tries to re-serialize it
+  Verified: no jsonify() calls in endpoints.py
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_task_create_returns_dict_tuple
+  TIME: 2026-04-04 09:48:49
+  Verified: _task_create_legacy returns (dict, 201)
+  Not a Flask Response object
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_to_dict_includes_resolved_flow_definition
+  TIME: 2026-04-04 09:48:49
+  Bug: Task.to_dict() was missing resolved_flow_definition
+  Kafka worker got None when looking up flow def from DB
+  Verified: field present with value {'flow_id': 'flow_text_to_ner', 'tasks': []}
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_to_dict_flow_definition_none_when_not_set
+  TIME: 2026-04-04 09:48:49
+  Verified: to_dict handles None resolved_flow_definition
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_offset_and_metadata_accepts_two_args
+  TIME: 2026-04-04 09:48:49
+  Bug: QF framework calls OffsetAndMetadata(offset, metadata) with 2 args
+  kafka-python 2.3.0 requires 3 args (offset, metadata, leader_epoch)
+  Fix: namedtuple with defaults=[0] for leader_epoch
+  Verified: OAM(42, None) -> OffsetAndMetadata(offset=42, metadata=None, leader_epoch=0)
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_offset_and_metadata_accepts_three_args
+  TIME: 2026-04-04 09:48:49
+  Verified: OAM(42, None, 5) -> OffsetAndMetadata(offset=42, metadata=None, leader_epoch=5)
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_endpoints_return_dicts_not_responses
+  TIME: 2026-04-04 09:49:58
+  Bug: jsonify() returns Flask Response, flask-restx tries to re-serialize it
+  Verified: no jsonify() calls in endpoints.py
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_task_create_returns_dict_tuple
+  TIME: 2026-04-04 09:49:58
+  Verified: _task_create_legacy returns (dict, 201)
+  Not a Flask Response object
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_to_dict_includes_resolved_flow_definition
+  TIME: 2026-04-04 09:49:58
+  Bug: Task.to_dict() was missing resolved_flow_definition
+  Kafka worker got None when looking up flow def from DB
+  Verified: field present with value {'flow_id': 'flow_text_to_ner', 'tasks': []}
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_to_dict_flow_definition_none_when_not_set
+  TIME: 2026-04-04 09:49:58
+  Verified: to_dict handles None resolved_flow_definition
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_offset_and_metadata_accepts_two_args
+  TIME: 2026-04-04 09:49:58
+  Bug: QF framework calls OffsetAndMetadata(offset, metadata) with 2 args
+  kafka-python 2.3.0 requires 3 args (offset, metadata, leader_epoch)
+  Fix: namedtuple with defaults=[0] for leader_epoch
+  Verified: OAM(42, None) -> OffsetAndMetadata(offset=42, metadata=None, leader_epoch=0)
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_offset_and_metadata_accepts_three_args
+  TIME: 2026-04-04 09:49:58
+  Verified: OAM(42, None, 5) -> OffsetAndMetadata(offset=42, metadata=None, leader_epoch=5)
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_endpoints_return_dicts_not_responses
+  TIME: 2026-04-04 09:51:09
+  Bug: jsonify() returns Flask Response, flask-restx tries to re-serialize it
+  Verified: no jsonify() calls in endpoints.py
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_task_create_returns_dict_tuple
+  TIME: 2026-04-04 09:51:09
+  Verified: _task_create_legacy returns (dict, 201)
+  Not a Flask Response object
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_to_dict_includes_resolved_flow_definition
+  TIME: 2026-04-04 09:51:09
+  Bug: Task.to_dict() was missing resolved_flow_definition
+  Kafka worker got None when looking up flow def from DB
+  Verified: field present with value {'flow_id': 'flow_text_to_ner', 'tasks': []}
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_to_dict_flow_definition_none_when_not_set
+  TIME: 2026-04-04 09:51:09
+  Verified: to_dict handles None resolved_flow_definition
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_offset_and_metadata_accepts_two_args
+  TIME: 2026-04-04 09:51:09
+  Bug: QF framework calls OffsetAndMetadata(offset, metadata) with 2 args
+  kafka-python 2.3.0 requires 3 args (offset, metadata, leader_epoch)
+  Fix: namedtuple with defaults=[0] for leader_epoch
+  Verified: OAM(42, None) -> OffsetAndMetadata(offset=42, metadata=None, leader_epoch=0)
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_offset_and_metadata_accepts_three_args
+  TIME: 2026-04-04 09:51:09
+  Verified: OAM(42, None, 5) -> OffsetAndMetadata(offset=42, metadata=None, leader_epoch=5)
+  PASS
+======================================================================

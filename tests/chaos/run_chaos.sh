@@ -78,7 +78,7 @@ fi
 section "1. KILL POSTGRESQL MID-FLOW"
 
 log "Creating a task..."
-TASK_RESP=$(curl -sf -X POST "$API_URL/api/tasks" \
+TASK_RESP=$(curl -sf -X POST "$API_URL/api/v1/tasks" \
     -H "Content-Type: application/json" \
     -d '{"input_type":"text","input_data":"John Smith in Berlin","desired_output":"ner"}' 2>&1) || true
 TASK_ID=$(echo "$TASK_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])" 2>/dev/null || echo "")
@@ -108,7 +108,7 @@ else
 
         # Check task state
         sleep 2
-        TASK_CHECK=$(curl -sf "$API_URL/api/tasks/$TASK_ID" 2>&1) || true
+        TASK_CHECK=$(curl -sf "$API_URL/api/v1/tasks/$TASK_ID" 2>&1) || true
         STATUS=$(echo "$TASK_CHECK" | python3 -c "import sys,json; print(json.load(sys.stdin).get('status','UNKNOWN'))" 2>/dev/null || echo "ERROR")
         log "  Task status after recovery: $STATUS"
         pass "Task $TASK_ID accessible after recovery (status=$STATUS)"
@@ -124,7 +124,7 @@ fi
 section "2. KILL KAFKA MID-FLOW"
 
 log "Creating a task..."
-TASK_RESP=$(curl -sf -X POST "$API_URL/api/tasks" \
+TASK_RESP=$(curl -sf -X POST "$API_URL/api/v1/tasks" \
     -H "Content-Type: application/json" \
     -d '{"input_type":"text","input_data":"Test Kafka resilience","desired_output":"sentiment"}' 2>&1) || true
 TASK_ID=$(echo "$TASK_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])" 2>/dev/null || echo "")
@@ -153,7 +153,7 @@ else
         sleep 5  # allow rebalance
 
         # Send a new task to verify Kafka is working
-        NEW_RESP=$(curl -sf -w "\n%{http_code}" -X POST "$API_URL/api/tasks" \
+        NEW_RESP=$(curl -sf -w "\n%{http_code}" -X POST "$API_URL/api/v1/tasks" \
             -H "Content-Type: application/json" \
             -d '{"input_type":"text","input_data":"Post-kafka-recovery test","desired_output":"ner"}' 2>&1) || true
         HTTP_CODE=$(echo "$NEW_RESP" | tail -1)

@@ -1,10 +1,8 @@
 """Business logic for task management — create, query, cancel.
 
-Supports both legacy (input_type + desired_output -> static flow) and
-new DAG-based (input_data + outputs -> dynamic execution plan) task creation.
+All task creation uses the DAG planner: input_data + outputs -> execution plan.
 """
 
-import json
 import uuid
 from datetime import datetime, timezone
 from typing import List, Optional
@@ -16,14 +14,13 @@ from src.models.task import Task, get_session
 from src.models.task_step_log import TaskStepLog
 
 
-def create_task_dag(input_data: dict, outputs: List[str]) -> dict:
-    """Create a task using the dynamic DAG planner.
+def create_task(input_data: dict, outputs: List[str]) -> dict:
+    """Create a task using the DAG planner.
 
     Builds an execution plan from input_data + outputs, stores it in the task,
     and returns the task dict. Does NOT publish to Kafka — the API layer does that.
     """
-    from src.dag.planner import build_plan, PlanningError
-    from src.dag.input_detector import detect_input_type
+    from src.dag.planner import build_plan
 
     plan = build_plan(input_data, outputs)
 
@@ -34,50 +31,8 @@ def create_task_dag(input_data: dict, outputs: List[str]) -> dict:
             id=task_id,
             input_type=plan.input_type,
             input_data=input_data,
-            desired_output=outputs[0] if len(outputs) == 1 else None,
             outputs=outputs,
             execution_plan=plan.to_dict(),
-            status="PENDING",
-            step_results={},
-            workflow_variables={},
-            retry_count=0,
-        )
-        session.add(task)
-        session.commit()
-        result = task.to_dict()
-        return result
-    except Exception:
-        session.rollback()
-        raise
-    finally:
-        session.close()
-
-
-def create_task(input_type: str, input_data: dict, desired_output: str) -> dict:
-    """Create a task using the legacy static flow resolver.
-
-    Kept for backwards compatibility. New code should use create_task_dag().
-    """
-    from src.core.resolver import resolve_flow
-    from src.templating.registry import get_flow
-
-    flow_id = resolve_flow(input_type, desired_output)
-    flow_def = get_flow(flow_id)
-
-    if flow_def is None:
-        raise ValueError(f"Flow definition '{flow_id}' not found in registry")
-
-    task_id = uuid.uuid4()
-    session = get_session()
-    try:
-        task = Task(
-            id=task_id,
-            input_type=input_type,
-            input_data=input_data,
-            desired_output=desired_output,
-            outputs=[desired_output],
-            resolved_flow=flow_id,
-            resolved_flow_definition=flow_def,
             status="PENDING",
             step_results={},
             workflow_variables={},
@@ -107,7 +62,7 @@ def get_task(task_id: str) -> Optional[dict]:
 
 
 def list_tasks(status: str = None, input_type: str = None,
-               desired_output: str = None, limit: int = 50, offset: int = 0,
+               limit: int = 50, offset: int = 0,
                cursor: str = None, sort: str = "created_at:desc",
                created_after: str = None, created_before: str = None) -> dict:
     """List tasks with cursor-based pagination.
@@ -123,8 +78,6 @@ def list_tasks(status: str = None, input_type: str = None,
             query = query.filter(Task.status == status)
         if input_type:
             query = query.filter(Task.input_type == input_type)
-        if desired_output:
-            query = query.filter(Task.desired_output == desired_output)
         if created_after:
             try:
                 dt = datetime.fromisoformat(created_after)

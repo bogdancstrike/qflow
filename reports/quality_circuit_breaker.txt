@@ -102,3 +102,263 @@
   Breaker state: closed
   PASS
 ======================================================================
+
+======================================================================
+  TEST: test_breaker_starts_closed
+  TIME: 2026-04-04 09:43:23
+  State: closed
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_breaker_opens_after_fail_max
+  TIME: 2026-04-04 09:43:29
+  fail_max: 10
+  Total failures triggered: 15
+  State after: open
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_breaker_rejects_when_open
+  TIME: 2026-04-04 09:43:35
+  Breaker state: open
+  Attempted call -> CircuitBreakerError raised
+  Underlying request NOT called
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_breaker_half_open_after_timeout
+  TIME: 2026-04-04 09:43:37
+  fail_max: 2, reset_timeout: 1s
+  Tripped breaker -> open
+  Waited 1.5s -> half-open
+  Successful call -> closed
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_breaker_reopens_on_half_open_failure
+  TIME: 2026-04-04 09:43:38
+  Tripped -> open -> waited -> half-open
+  Failed again during half-open -> re-opened
+  State: open
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_successful_requests_dont_trip_breaker
+  TIME: 2026-04-04 09:43:38
+  20 successful requests
+  Breaker state: closed
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_breaker_starts_closed
+  TIME: 2026-04-04 09:44:07
+  State: closed
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_breaker_opens_after_fail_max
+  TIME: 2026-04-04 09:44:13
+  fail_max: 10
+  Total failures triggered: 15
+  State after: open
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_breaker_rejects_when_open
+  TIME: 2026-04-04 09:44:19
+  Breaker state: open
+  Attempted call -> CircuitBreakerError raised
+  Underlying request NOT called
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_breaker_half_open_after_timeout
+  TIME: 2026-04-04 09:44:20
+  fail_max: 2, reset_timeout: 1s
+  Tripped breaker -> open
+  Waited 1.5s -> half-open
+  Successful call -> closed
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_breaker_reopens_on_half_open_failure
+  TIME: 2026-04-04 09:44:22
+  Tripped -> open -> waited -> half-open
+  Failed again during half-open -> re-opened
+  State: open
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_successful_requests_dont_trip_breaker
+  TIME: 2026-04-04 09:44:22
+  20 successful requests
+  Breaker state: closed
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_breaker_starts_closed
+  TIME: 2026-04-04 09:49:26
+  State: closed
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_breaker_opens_after_fail_max
+  TIME: 2026-04-04 09:49:32
+  fail_max: 10
+  Total failures triggered: 15
+  State after: open
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_breaker_rejects_when_open
+  TIME: 2026-04-04 09:49:38
+  Breaker state: open
+  Attempted call -> CircuitBreakerError raised
+  Underlying request NOT called
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_breaker_half_open_after_timeout
+  TIME: 2026-04-04 09:49:40
+  fail_max: 2, reset_timeout: 1s
+  Tripped breaker -> open
+  Waited 1.5s -> half-open
+  Successful call -> closed
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_breaker_reopens_on_half_open_failure
+  TIME: 2026-04-04 09:49:41
+  Tripped -> open -> waited -> half-open
+  Failed again during half-open -> re-opened
+  State: open
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_successful_requests_dont_trip_breaker
+  TIME: 2026-04-04 09:49:41
+  20 successful requests
+  Breaker state: closed
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_breaker_starts_closed
+  TIME: 2026-04-04 09:50:31
+  State: closed
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_breaker_opens_after_fail_max
+  TIME: 2026-04-04 09:50:37
+  fail_max: 10
+  Total failures triggered: 15
+  State after: open
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_breaker_rejects_when_open
+  TIME: 2026-04-04 09:50:43
+  Breaker state: open
+  Attempted call -> CircuitBreakerError raised
+  Underlying request NOT called
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_breaker_half_open_after_timeout
+  TIME: 2026-04-04 09:50:45
+  fail_max: 2, reset_timeout: 1s
+  Tripped breaker -> open
+  Waited 1.5s -> half-open
+  Successful call -> closed
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_breaker_reopens_on_half_open_failure
+  TIME: 2026-04-04 09:50:46
+  Tripped -> open -> waited -> half-open
+  Failed again during half-open -> re-opened
+  State: open
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_successful_requests_dont_trip_breaker
+  TIME: 2026-04-04 09:50:46
+  20 successful requests
+  Breaker state: closed
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_breaker_starts_closed
+  TIME: 2026-04-04 09:52:24
+  State: closed
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_breaker_opens_after_fail_max
+  TIME: 2026-04-04 09:52:30
+  fail_max: 10
+  Total failures triggered: 15
+  State after: open
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_breaker_rejects_when_open
+  TIME: 2026-04-04 09:52:36
+  Breaker state: open
+  Attempted call -> CircuitBreakerError raised
+  Underlying request NOT called
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_breaker_half_open_after_timeout
+  TIME: 2026-04-04 09:52:38
+  fail_max: 2, reset_timeout: 1s
+  Tripped breaker -> open
+  Waited 1.5s -> half-open
+  Successful call -> closed
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_breaker_reopens_on_half_open_failure
+  TIME: 2026-04-04 09:52:39
+  Tripped -> open -> waited -> half-open
+  Failed again during half-open -> re-opened
+  State: open
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_successful_requests_dont_trip_breaker
+  TIME: 2026-04-04 09:52:39
+  20 successful requests
+  Breaker state: closed
+  PASS
+======================================================================

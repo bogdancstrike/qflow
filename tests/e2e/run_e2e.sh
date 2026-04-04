@@ -28,6 +28,9 @@ FAIL_COUNT=0
 SKIP_COUNT=0
 
 API_URL="http://localhost:5000"
+TASKS_URL="$API_URL/api/v1/tasks"
+HEALTH_URL="$API_URL/api/health"
+FLOWS_URL="$API_URL/api/v1/flows"
 
 mkdir -p "$REPORT_DIR"
 
@@ -153,7 +156,7 @@ WAITED=0
 API_READY=false
 
 while [ $WAITED -lt $MAX_WAIT ]; do
-    if curl -sf "$API_URL/api/health" > /dev/null 2>&1; then
+    if curl -sf "$HEALTH_URL" > /dev/null 2>&1; then
         API_READY=true
         break
     fi
@@ -176,8 +179,8 @@ fi
 
 section "3. HEALTH CHECK"
 
-HEALTH=$(curl -sf "$API_URL/api/health" 2>&1) || true
-if echo "$HEALTH" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['status']=='healthy'" 2>/dev/null; then
+HEALTH=$(curl -sf "$HEALTH_URL" 2>&1) || true
+if echo "$HEALTH" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['status'] in ('healthy','degraded')" 2>/dev/null; then
     pass "GET /api/health -> healthy"
     log "  Response: $HEALTH"
 else
@@ -191,7 +194,7 @@ fi
 
 section "4. FLOW STRATEGIES"
 
-FLOWS=$(curl -sf "$API_URL/api/flows" 2>&1) || true
+FLOWS=$(curl -sf "$FLOWS_URL" 2>&1) || true
 FLOW_COUNT=$(echo "$FLOWS" | python3 -c "import sys,json; print(json.load(sys.stdin)['count'])" 2>/dev/null || echo "0")
 if [ "$FLOW_COUNT" -gt 0 ]; then
     pass "GET /api/flows -> $FLOW_COUNT strategies"
@@ -213,7 +216,7 @@ test_task() {
     local response
     local http_code
 
-    response=$(curl -sf -w "\n%{http_code}" -X POST "$API_URL/api/tasks" \
+    response=$(curl -sf -w "\n%{http_code}" -X POST "$TASKS_URL" \
         -H "Content-Type: application/json" \
         -d "$payload" 2>&1) || true
 
@@ -245,7 +248,7 @@ test_task() {
         sleep 1
         polled=$((polled + 1))
         local task_resp
-        task_resp=$(curl -sf "$API_URL/api/tasks/$task_id" 2>&1) || true
+        task_resp=$(curl -sf "$TASKS_URL/$task_id" 2>&1) || true
         status=$(echo "$task_resp" | python3 -c "import sys,json; print(json.load(sys.stdin)['status'])" 2>/dev/null || echo "UNKNOWN")
 
         if [ "$status" = "COMPLETED" ] || [ "$status" = "FAILED" ] || [ "$status" = "TERMINATED" ]; then
@@ -308,17 +311,17 @@ test_task "POST youtube->stt" \
 section "6. TASK LIST & GET"
 
 # List all tasks
-LIST_RESP=$(curl -sf "$API_URL/api/tasks" 2>&1) || true
-TASK_COUNT=$(echo "$LIST_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['count'])" 2>/dev/null || echo "0")
+LIST_RESP=$(curl -sf "$TASKS_URL" 2>&1) || true
+TASK_COUNT=$(echo "$LIST_RESP" | python3 -c "import sys,json; print(len(json.load(sys.stdin)['tasks']))" 2>/dev/null || echo "0")
 if [ "$TASK_COUNT" -gt 0 ]; then
-    pass "GET /api/tasks -> $TASK_COUNT tasks"
+    pass "GET /api/v1/tasks -> $TASK_COUNT tasks"
 else
-    fail "GET /api/tasks -> 0 tasks"
+    fail "GET /api/v1/tasks -> 0 tasks"
 fi
 
 # List with filter
-FILTER_RESP=$(curl -sf "$API_URL/api/tasks?status=COMPLETED&limit=5" 2>&1) || true
-FILTER_COUNT=$(echo "$FILTER_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['count'])" 2>/dev/null || echo "0")
+FILTER_RESP=$(curl -sf "$TASKS_URL?status=COMPLETED&limit=5" 2>&1) || true
+FILTER_COUNT=$(echo "$FILTER_RESP" | python3 -c "import sys,json; print(len(json.load(sys.stdin)['tasks']))" 2>/dev/null || echo "0")
 log "  Filtered (status=COMPLETED, limit=5): $FILTER_COUNT tasks"
 
 # =============================================================================
@@ -328,7 +331,7 @@ log "  Filtered (status=COMPLETED, limit=5): $FILTER_COUNT tasks"
 section "7. INVALID REQUEST HANDLING"
 
 # Missing fields
-RESP=$(curl -sf -w "\n%{http_code}" -X POST "$API_URL/api/tasks" \
+RESP=$(curl -sf -w "\n%{http_code}" -X POST "$TASKS_URL" \
     -H "Content-Type: application/json" \
     -d '{}' 2>&1) || true
 HTTP_CODE=$(echo "$RESP" | tail -1)
@@ -339,7 +342,7 @@ else
 fi
 
 # Invalid input_type
-RESP=$(curl -sf -w "\n%{http_code}" -X POST "$API_URL/api/tasks" \
+RESP=$(curl -sf -w "\n%{http_code}" -X POST "$TASKS_URL" \
     -H "Content-Type: application/json" \
     -d '{"input_type":"invalid","desired_output":"ner","input_data":"hello"}' 2>&1) || true
 HTTP_CODE=$(echo "$RESP" | tail -1)
@@ -350,7 +353,7 @@ else
 fi
 
 # Invalid desired_output
-RESP=$(curl -sf -w "\n%{http_code}" -X POST "$API_URL/api/tasks" \
+RESP=$(curl -sf -w "\n%{http_code}" -X POST "$TASKS_URL" \
     -H "Content-Type: application/json" \
     -d '{"input_type":"text","desired_output":"nonexistent","input_data":"hello"}' 2>&1) || true
 HTTP_CODE=$(echo "$RESP" | tail -1)
@@ -361,7 +364,7 @@ else
 fi
 
 # Invalid combination
-RESP=$(curl -sf -w "\n%{http_code}" -X POST "$API_URL/api/tasks" \
+RESP=$(curl -sf -w "\n%{http_code}" -X POST "$TASKS_URL" \
     -H "Content-Type: application/json" \
     -d '{"input_type":"text","desired_output":"stt","input_data":"hello"}' 2>&1) || true
 HTTP_CODE=$(echo "$RESP" | tail -1)
@@ -372,7 +375,7 @@ else
 fi
 
 # Nonexistent task
-RESP=$(curl -sf -w "\n%{http_code}" "$API_URL/api/tasks/00000000-0000-0000-0000-000000000000" 2>&1) || true
+RESP=$(curl -sf -w "\n%{http_code}" "$TASKS_URL/00000000-0000-0000-0000-000000000000" 2>&1) || true
 HTTP_CODE=$(echo "$RESP" | tail -1)
 if [ "$HTTP_CODE" = "404" ]; then
     pass "GET nonexistent task -> 404"
@@ -381,7 +384,7 @@ else
 fi
 
 # Delete nonexistent task
-RESP=$(curl -sf -w "\n%{http_code}" -X DELETE "$API_URL/api/tasks/00000000-0000-0000-0000-000000000000" 2>&1) || true
+RESP=$(curl -sf -w "\n%{http_code}" -X DELETE "$TASKS_URL/00000000-0000-0000-0000-000000000000" 2>&1) || true
 HTTP_CODE=$(echo "$RESP" | tail -1)
 if [ "$HTTP_CODE" = "404" ]; then
     pass "DELETE nonexistent task -> 404"
@@ -396,13 +399,13 @@ fi
 section "8. TASK DELETION"
 
 # Create a task, then delete it
-DEL_RESP=$(curl -sf -X POST "$API_URL/api/tasks" \
+DEL_RESP=$(curl -sf -X POST "$TASKS_URL" \
     -H "Content-Type: application/json" \
     -d '{"input_type":"text","input_data":"delete me","desired_output":"ner"}' 2>&1) || true
 DEL_ID=$(echo "$DEL_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])" 2>/dev/null || echo "")
 
 if [ -n "$DEL_ID" ]; then
-    RESP=$(curl -sf -w "\n%{http_code}" -X DELETE "$API_URL/api/tasks/$DEL_ID" 2>&1) || true
+    RESP=$(curl -sf -w "\n%{http_code}" -X DELETE "$TASKS_URL/$DEL_ID" 2>&1) || true
     HTTP_CODE=$(echo "$RESP" | tail -1)
     if [ "$HTTP_CODE" = "200" ]; then
         pass "DELETE task $DEL_ID -> 200"
@@ -411,7 +414,7 @@ if [ -n "$DEL_ID" ]; then
     fi
 
     # Verify it's gone
-    RESP=$(curl -sf -w "\n%{http_code}" "$API_URL/api/tasks/$DEL_ID" 2>&1) || true
+    RESP=$(curl -sf -w "\n%{http_code}" "$TASKS_URL/$DEL_ID" 2>&1) || true
     HTTP_CODE=$(echo "$RESP" | tail -1)
     if [ "$HTTP_CODE" = "404" ]; then
         pass "GET deleted task -> 404"

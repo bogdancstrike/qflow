@@ -33,20 +33,23 @@ class TestKafkaUnavailability:
     """Verify API gracefully handles Kafka broker being down."""
 
     def test_publish_fails_when_kafka_down(self):
-        """When Kafka is down, publishing should fail but task creation should still
-        succeed in the DB (the task just won't be processed)."""
+        """When Kafka is down, _publish_to_kafka should catch the exception
+        and log it. Task creation still succeeds in the DB."""
         mock_kafka = MagicMock()
         mock_kafka.put_message.side_effect = Exception("NoBrokersAvailable")
 
-        with patch("framework.streams.kafka_client.KafkaClient", return_value=mock_kafka) as mock_cls:
-            # Import after patching
-            from src.api.endpoints import _task_create_inner
+        with patch("framework.streams.kafka_client.KafkaClient", return_value=mock_kafka):
+            from src.api.endpoints import _publish_to_kafka
 
-            # Simulate the kafka failure path - the endpoint catches the exception
-            # and logs it but still returns the task
+            # Should not raise — catches exception internally
+            _publish_to_kafka(
+                {"id": "test-id", "outputs": [], "desired_output": "ner"},
+                {"text": "hello"},
+            )
+
             _write_report("test_publish_fails_when_kafka_down", [
                 "Simulated: KafkaClient.put_message raises NoBrokersAvailable",
-                "Expected: Task created in DB, Kafka publish logged as error",
+                "Result: _publish_to_kafka caught exception, did not raise",
                 "PASS",
             ])
 

@@ -184,3 +184,468 @@
   Tested 5 special inputs
   PASS (no crash)
 ======================================================================
+
+======================================================================
+  TEST: test_empty_payload
+  TIME: 2026-04-04 09:43:49
+  Errors: ["'input_type' is required", "'desired_output' is required"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_missing_input_type
+  TIME: 2026-04-04 09:43:49
+  Errors: ["'input_type' is required"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_missing_desired_output
+  TIME: 2026-04-04 09:43:49
+  Errors: ["'desired_output' is required"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_invalid_input_type
+  TIME: 2026-04-04 09:43:49
+  Errors: ["Invalid input_type 'invalid_type'. Valid: ['file_upload', 'text', 'youtube_link']"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_invalid_desired_output
+  TIME: 2026-04-04 09:43:49
+  Errors: ["Invalid desired_output 'nonexistent_output'. Valid: ['language_detect', 'ner', 'sentiment', 'stt', 'summary', 'taxonomy', 'translate']"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_invalid_combination
+  TIME: 2026-04-04 09:43:49
+  Errors: ["Input type 'text' is not supported for desired_output 'stt'. Valid input types: ['file_upload', 'youtube_link']"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_empty_input_data_text
+  TIME: 2026-04-04 09:43:49
+  Errors: ["'input_data' must be a non-empty string or JSON object for text input"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_null_input_data
+  TIME: 2026-04-04 09:43:49
+  Errors: ["'input_data' must be a non-empty string or JSON object for text input"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_numeric_input_data
+  TIME: 2026-04-04 09:43:49
+  Errors: ["'input_data' must be a non-empty string or JSON object for text input"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_youtube_with_non_string_input
+  TIME: 2026-04-04 09:43:49
+  Errors: ["'input_data' must be a YouTube URL string"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_extremely_long_input
+  TIME: 2026-04-04 09:43:49
+  Input size: 10485760 bytes
+  Errors: []
+  PASS (no crash)
+======================================================================
+
+======================================================================
+  TEST: test_nested_json_bomb
+  TIME: 2026-04-04 09:43:49
+  Depth: 100 levels
+  Errors: []
+  PASS (no crash)
+======================================================================
+
+======================================================================
+  TEST: test_special_characters_in_input
+  TIME: 2026-04-04 09:43:49
+  Tested 5 special inputs
+  PASS (no crash)
+======================================================================
+
+======================================================================
+  TEST: test_empty_payload
+  TIME: 2026-04-04 09:44:32
+  Errors: ["'input_type' is required", "'desired_output' is required"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_missing_input_type
+  TIME: 2026-04-04 09:44:32
+  Errors: ["'input_type' is required"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_missing_desired_output
+  TIME: 2026-04-04 09:44:32
+  Errors: ["'desired_output' is required"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_invalid_input_type
+  TIME: 2026-04-04 09:44:32
+  Errors: ["Invalid input_type 'invalid_type'. Valid: ['file_upload', 'text', 'youtube_link']"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_invalid_desired_output
+  TIME: 2026-04-04 09:44:32
+  Errors: ["Invalid desired_output 'nonexistent_output'. Valid: ['language_detect', 'ner', 'sentiment', 'stt', 'summary', 'taxonomy', 'translate']"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_invalid_combination
+  TIME: 2026-04-04 09:44:32
+  Errors: ["Input type 'text' is not supported for desired_output 'stt'. Valid input types: ['file_upload', 'youtube_link']"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_empty_input_data_text
+  TIME: 2026-04-04 09:44:32
+  Errors: ["'input_data' must be a non-empty string or JSON object for text input"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_null_input_data
+  TIME: 2026-04-04 09:44:32
+  Errors: ["'input_data' must be a non-empty string or JSON object for text input"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_numeric_input_data
+  TIME: 2026-04-04 09:44:32
+  Errors: ["'input_data' must be a non-empty string or JSON object for text input"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_youtube_with_non_string_input
+  TIME: 2026-04-04 09:44:32
+  Errors: ["'input_data' must be a YouTube URL string"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_extremely_long_input
+  TIME: 2026-04-04 09:44:32
+  Input size: 10485760 bytes
+  Errors: []
+  PASS (no crash)
+======================================================================
+
+======================================================================
+  TEST: test_nested_json_bomb
+  TIME: 2026-04-04 09:44:32
+  Depth: 100 levels
+  Errors: []
+  PASS (no crash)
+======================================================================
+
+======================================================================
+  TEST: test_special_characters_in_input
+  TIME: 2026-04-04 09:44:32
+  Tested 5 special inputs
+  PASS (no crash)
+======================================================================
+
+======================================================================
+  TEST: test_empty_payload
+  TIME: 2026-04-04 09:49:41
+  Errors: ["'input_type' is required", "'desired_output' is required"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_missing_input_type
+  TIME: 2026-04-04 09:49:41
+  Errors: ["'input_type' is required"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_missing_desired_output
+  TIME: 2026-04-04 09:49:41
+  Errors: ["'desired_output' is required"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_invalid_input_type
+  TIME: 2026-04-04 09:49:41
+  Errors: ["Invalid input_type 'invalid_type'. Valid: ['file_upload', 'text', 'youtube_link']"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_invalid_desired_output
+  TIME: 2026-04-04 09:49:41
+  Errors: ["Invalid desired_output 'nonexistent_output'. Valid: ['custom_output', 'language_detect', 'ner', 'sentiment', 'stt', 'summary', 'taxonomy', 'translate']"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_invalid_combination
+  TIME: 2026-04-04 09:49:41
+  Errors: ["Input type 'text' is not supported for desired_output 'stt'. Valid input types: ['file_upload', 'youtube_link']"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_empty_input_data_text
+  TIME: 2026-04-04 09:49:41
+  Errors: ["'input_data' must be a non-empty string or JSON object for text input"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_null_input_data
+  TIME: 2026-04-04 09:49:41
+  Errors: ["'input_data' must be a non-empty string or JSON object for text input"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_numeric_input_data
+  TIME: 2026-04-04 09:49:41
+  Errors: ["'input_data' must be a non-empty string or JSON object for text input"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_youtube_with_non_string_input
+  TIME: 2026-04-04 09:49:41
+  Errors: ["'input_data' must be a YouTube URL string"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_extremely_long_input
+  TIME: 2026-04-04 09:49:41
+  Input size: 10485760 bytes
+  Errors: []
+  PASS (no crash)
+======================================================================
+
+======================================================================
+  TEST: test_nested_json_bomb
+  TIME: 2026-04-04 09:49:41
+  Depth: 100 levels
+  Errors: []
+  PASS (no crash)
+======================================================================
+
+======================================================================
+  TEST: test_special_characters_in_input
+  TIME: 2026-04-04 09:49:41
+  Tested 5 special inputs
+  PASS (no crash)
+======================================================================
+
+======================================================================
+  TEST: test_empty_payload
+  TIME: 2026-04-04 09:50:47
+  Errors: ["'input_type' is required", "'desired_output' is required"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_missing_input_type
+  TIME: 2026-04-04 09:50:47
+  Errors: ["'input_type' is required"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_missing_desired_output
+  TIME: 2026-04-04 09:50:47
+  Errors: ["'desired_output' is required"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_invalid_input_type
+  TIME: 2026-04-04 09:50:47
+  Errors: ["Invalid input_type 'invalid_type'. Valid: ['file_upload', 'text', 'youtube_link']"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_invalid_desired_output
+  TIME: 2026-04-04 09:50:47
+  Errors: ["Invalid desired_output 'nonexistent_output'. Valid: ['custom_output', 'language_detect', 'ner', 'sentiment', 'stt', 'summary', 'taxonomy', 'translate']"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_invalid_combination
+  TIME: 2026-04-04 09:50:47
+  Errors: ["Input type 'text' is not supported for desired_output 'stt'. Valid input types: ['file_upload', 'youtube_link']"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_empty_input_data_text
+  TIME: 2026-04-04 09:50:47
+  Errors: ["'input_data' must be a non-empty string or JSON object for text input"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_null_input_data
+  TIME: 2026-04-04 09:50:47
+  Errors: ["'input_data' must be a non-empty string or JSON object for text input"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_numeric_input_data
+  TIME: 2026-04-04 09:50:47
+  Errors: ["'input_data' must be a non-empty string or JSON object for text input"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_youtube_with_non_string_input
+  TIME: 2026-04-04 09:50:47
+  Errors: ["'input_data' must be a YouTube URL string"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_extremely_long_input
+  TIME: 2026-04-04 09:50:47
+  Input size: 10485760 bytes
+  Errors: []
+  PASS (no crash)
+======================================================================
+
+======================================================================
+  TEST: test_nested_json_bomb
+  TIME: 2026-04-04 09:50:47
+  Depth: 100 levels
+  Errors: []
+  PASS (no crash)
+======================================================================
+
+======================================================================
+  TEST: test_special_characters_in_input
+  TIME: 2026-04-04 09:50:47
+  Tested 5 special inputs
+  PASS (no crash)
+======================================================================
+
+======================================================================
+  TEST: test_empty_payload
+  TIME: 2026-04-04 09:52:51
+  Errors: ["'input_type' is required", "'desired_output' is required"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_missing_input_type
+  TIME: 2026-04-04 09:52:51
+  Errors: ["'input_type' is required"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_missing_desired_output
+  TIME: 2026-04-04 09:52:51
+  Errors: ["'desired_output' is required"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_invalid_input_type
+  TIME: 2026-04-04 09:52:51
+  Errors: ["Invalid input_type 'invalid_type'. Valid: ['file_upload', 'text', 'youtube_link']"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_invalid_desired_output
+  TIME: 2026-04-04 09:52:51
+  Errors: ["Invalid desired_output 'nonexistent_output'. Valid: ['language_detect', 'ner', 'sentiment', 'stt', 'summary', 'taxonomy', 'translate']"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_invalid_combination
+  TIME: 2026-04-04 09:52:51
+  Errors: ["Input type 'text' is not supported for desired_output 'stt'. Valid input types: ['file_upload', 'youtube_link']"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_empty_input_data_text
+  TIME: 2026-04-04 09:52:51
+  Errors: ["'input_data' must be a non-empty string or JSON object for text input"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_null_input_data
+  TIME: 2026-04-04 09:52:51
+  Errors: ["'input_data' must be a non-empty string or JSON object for text input"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_numeric_input_data
+  TIME: 2026-04-04 09:52:51
+  Errors: ["'input_data' must be a non-empty string or JSON object for text input"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_youtube_with_non_string_input
+  TIME: 2026-04-04 09:52:51
+  Errors: ["'input_data' must be a YouTube URL string"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_extremely_long_input
+  TIME: 2026-04-04 09:52:51
+  Input size: 10485760 bytes
+  Errors: []
+  PASS (no crash)
+======================================================================
+
+======================================================================
+  TEST: test_nested_json_bomb
+  TIME: 2026-04-04 09:52:51
+  Depth: 100 levels
+  Errors: []
+  PASS (no crash)
+======================================================================
+
+======================================================================
+  TEST: test_special_characters_in_input
+  TIME: 2026-04-04 09:52:51
+  Tested 5 special inputs
+  PASS (no crash)
+======================================================================
