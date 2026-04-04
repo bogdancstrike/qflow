@@ -7,18 +7,17 @@ def register_models(api):
     """Register API models with Flask-RESTX for Swagger documentation."""
 
     task_input_model = api.model("TaskInput", {
-        "input_type": fields.String(
-            required=True,
-            description="Input type: file_upload, text, or youtube_link",
-            enum=["file_upload", "text", "youtube_link"],
-        ),
         "input_data": fields.Raw(
             required=True,
-            description="Input data: text content, YouTube URL, or file metadata",
+            description="Input data: {'text': '...'}, {'file_path': '...'}, or {'url': 'youtube-url'}",
         ),
-        "desired_output": fields.String(
+        "outputs": fields.List(
+            fields.String(),
             required=True,
-            description="Desired output type: stt, ner, sentiment, summary, etc.",
+            description="List of desired output types: ner_result, sentiment_result, summary, etc.",
+        ),
+        "input_type": fields.String(
+            description="Optional input type hint (auto-detected if omitted)",
         ),
     })
 
@@ -26,8 +25,8 @@ def register_models(api):
         "id": fields.String(description="Task ID"),
         "input_type": fields.String(),
         "input_data": fields.Raw(),
-        "desired_output": fields.String(),
-        "resolved_flow": fields.String(),
+        "outputs": fields.List(fields.String()),
+        "execution_plan": fields.Raw(),
         "status": fields.String(),
         "current_step": fields.String(),
         "step_results": fields.Raw(),

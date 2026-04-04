@@ -16,11 +16,8 @@ class Task(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     input_type = Column(String(50), nullable=False)
     input_data = Column(JSONB, nullable=False)
-    desired_output = Column(String(50), nullable=True)  # legacy single-output
-    outputs = Column(JSONB, nullable=True)  # new: list of requested output types
-    resolved_flow = Column(String(100), nullable=True)
-    resolved_flow_definition = Column(JSONB, nullable=True)
-    execution_plan = Column(JSONB, nullable=True)  # new: DAG execution plan
+    outputs = Column(JSONB, nullable=False)  # list of requested output types
+    execution_plan = Column(JSONB, nullable=False)  # DAG execution plan
     status = Column(String(20), nullable=False, default="PENDING")
     current_step = Column(String(100), nullable=True)
     step_results = Column(JSONB, nullable=True, default=dict)
@@ -36,10 +33,7 @@ class Task(Base):
             "id": str(self.id),
             "input_type": self.input_type,
             "input_data": self.input_data,
-            "desired_output": self.desired_output,
             "outputs": self.outputs,
-            "resolved_flow": self.resolved_flow,
-            "resolved_flow_definition": self.resolved_flow_definition,
             "execution_plan": self.execution_plan,
             "status": self.status,
             "current_step": self.current_step,

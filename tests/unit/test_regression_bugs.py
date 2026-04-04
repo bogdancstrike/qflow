@@ -1,23 +1,16 @@
 """Regression tests for bugs fixed in April 2026.
 
 Bug 1: POST /api/tasks returned 500 (TypeError: Object of type Response is not JSON serializable)
-  Root cause: endpoints used jsonify() which returns a Flask Response, but flask-restx
-  wraps return values and tries to serialize them again.
   Fix: Return plain dicts instead of jsonify().
 
-Bug 2: Kafka worker "Task has no resolved flow definition"
-  Root cause: Task.to_dict() did not include resolved_flow_definition field.
-  Fix: Added resolved_flow_definition to to_dict().
-
-Bug 3: Kafka offset commit failure (OffsetAndMetadata missing leader_epoch)
-  Root cause: kafka-python 2.3.0 requires 3 args for OffsetAndMetadata but
-  QF framework only passes 2.
+Bug 2: Kafka offset commit failure (OffsetAndMetadata missing leader_epoch)
   Fix: Monkey-patch OffsetAndMetadata at startup with default leader_epoch=0.
+
+Bug 3: Endpoints must not use jsonify() — flask-restx wraps return values.
 """
 
 import os
 import time
-
 import pytest
 
 os.environ["DEV_MODE"] = "true"
@@ -38,7 +31,7 @@ def _write_report(test_name, lines):
         f.write(f"{'='*70}\n")
 
 
-class TestBug1EndpointReturnTypes:
+class TestEndpointReturnTypes:
     """Regression: endpoints must return dicts, not Flask Response objects."""
 
     def test_endpoints_return_dicts_not_responses(self):
@@ -56,123 +49,15 @@ class TestBug1EndpointReturnTypes:
             "PASS",
         ])
 
-    def test_task_create_returns_dict_tuple(self):
-        """Verify _task_create_legacy returns (dict, int) not Response."""
-        from unittest.mock import patch, MagicMock
-        from flask import Flask
 
-        app = Flask(__name__)
-        with app.test_request_context(
-            "/api/v1/tasks",
-            method="POST",
-            json={
-                "input_type": "text",
-                "input_data": "hello",
-                "desired_output": "ner",
-            },
-            content_type="application/json",
-        ):
-            mock_span = MagicMock()
-            mock_task = {
-                "id": "test-id",
-                "status": "PENDING",
-                "input_type": "text",
-                "desired_output": "ner",
-                "outputs": ["ner"],
-            }
-
-            with patch("src.api.endpoints.create_task", return_value=mock_task), \
-                 patch("framework.streams.kafka_client.KafkaClient"):
-                from src.api.endpoints import _task_create_legacy
-                result = _task_create_legacy(
-                    {"input_type": "text", "input_data": "hello", "desired_output": "ner"},
-                    mock_span,
-                )
-
-            # Should be (dict, 201) not a Response object
-            assert isinstance(result, tuple), f"Expected tuple, got {type(result)}"
-            body, code = result
-            assert isinstance(body, dict), f"Expected dict body, got {type(body)}"
-            assert code == 201
-
-        _write_report("test_task_create_returns_dict_tuple", [
-            "Verified: _task_create_legacy returns (dict, 201)",
-            "Not a Flask Response object",
-            "PASS",
-        ])
-
-
-class TestBug2FlowDefinitionInToDict:
-    """Regression: Task.to_dict() must include resolved_flow_definition."""
-
-    def test_to_dict_includes_resolved_flow_definition(self):
-        """Verify the field is present in to_dict() output."""
-        from src.models.task import Task
-        import uuid
-        from datetime import datetime, timezone
-
-        task = Task(
-            id=uuid.uuid4(),
-            input_type="text",
-            input_data={"text": "hello"},
-            desired_output="ner",
-            resolved_flow="flow_text_to_ner",
-            resolved_flow_definition={"flow_id": "flow_text_to_ner", "tasks": []},
-            status="PENDING",
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
-        )
-
-        d = task.to_dict()
-        assert "resolved_flow_definition" in d, \
-            "to_dict() missing resolved_flow_definition — Kafka worker needs this"
-        assert d["resolved_flow_definition"]["flow_id"] == "flow_text_to_ner"
-
-        _write_report("test_to_dict_includes_resolved_flow_definition", [
-            "Bug: Task.to_dict() was missing resolved_flow_definition",
-            "Kafka worker got None when looking up flow def from DB",
-            f"Verified: field present with value {d['resolved_flow_definition']}",
-            "PASS",
-        ])
-
-    def test_to_dict_flow_definition_none_when_not_set(self):
-        """to_dict should handle None gracefully."""
-        from src.models.task import Task
-        import uuid
-        from datetime import datetime, timezone
-
-        task = Task(
-            id=uuid.uuid4(),
-            input_type="text",
-            input_data={"text": "hello"},
-            desired_output="ner",
-            resolved_flow="flow_text_to_ner",
-            resolved_flow_definition=None,
-            status="PENDING",
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
-        )
-
-        d = task.to_dict()
-        assert "resolved_flow_definition" in d
-        assert d["resolved_flow_definition"] is None
-
-        _write_report("test_to_dict_flow_definition_none_when_not_set", [
-            "Verified: to_dict handles None resolved_flow_definition",
-            "PASS",
-        ])
-
-
-class TestBug3KafkaOffsetAndMetadata:
+class TestKafkaOffsetAndMetadata:
     """Regression: OffsetAndMetadata must accept 2 args (offset, metadata)."""
 
     def test_offset_and_metadata_accepts_two_args(self):
         """The monkey-patch should allow 2-arg construction."""
         from collections import namedtuple
-        # Simulate the patched version
         OAM = namedtuple("OffsetAndMetadata", ["offset", "metadata", "leader_epoch"], defaults=[0])
 
-        # 2-arg call (what QF framework does)
         oam = OAM(42, None)
         assert oam.offset == 42
         assert oam.metadata is None
@@ -187,7 +72,6 @@ class TestBug3KafkaOffsetAndMetadata:
         ])
 
     def test_offset_and_metadata_accepts_three_args(self):
-        """Should still work with explicit 3 args."""
         from collections import namedtuple
         OAM = namedtuple("OffsetAndMetadata", ["offset", "metadata", "leader_epoch"], defaults=[0])
 
@@ -196,5 +80,102 @@ class TestBug3KafkaOffsetAndMetadata:
 
         _write_report("test_offset_and_metadata_accepts_three_args", [
             f"Verified: OAM(42, None, 5) -> {oam}",
+            "PASS",
+        ])
+
+
+class TestTaskModelFields:
+    """Verify Task model contains all required DAG fields."""
+
+    def test_task_to_dict_has_dag_fields(self):
+        from src.models.task import Task
+        import uuid
+        from datetime import datetime, timezone
+
+        task = Task(
+            id=uuid.uuid4(),
+            input_type="text",
+            input_data={"text": "hello"},
+            outputs=["ner_result"],
+            execution_plan={"input_type": "text", "ingest_steps": [], "branches": []},
+            status="PENDING",
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
+        )
+
+        d = task.to_dict()
+        assert "outputs" in d
+        assert "execution_plan" in d
+        assert d["outputs"] == ["ner_result"]
+        assert d["execution_plan"]["input_type"] == "text"
+
+        _write_report("test_task_to_dict_has_dag_fields", [
+            "Verified: to_dict() includes outputs and execution_plan",
+            "PASS",
+        ])
+
+    def test_task_to_dict_no_legacy_fields(self):
+        """Legacy fields (resolved_flow, resolved_flow_definition, desired_output) should not exist."""
+        from src.models.task import Task
+        import uuid
+        from datetime import datetime, timezone
+
+        task = Task(
+            id=uuid.uuid4(),
+            input_type="text",
+            input_data={"text": "hello"},
+            outputs=["ner_result"],
+            execution_plan={"input_type": "text", "ingest_steps": [], "branches": []},
+            status="PENDING",
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
+        )
+
+        d = task.to_dict()
+        assert "resolved_flow" not in d
+        assert "resolved_flow_definition" not in d
+        assert "desired_output" not in d
+
+        _write_report("test_task_to_dict_no_legacy_fields", [
+            "Verified: legacy fields removed from to_dict()",
+            "PASS",
+        ])
+
+
+class TestFlowExecutorValidation:
+    """Verify flow_executor handles edge cases."""
+
+    def test_flow_executor_missing_task_id(self):
+        from src.workers.flow_executor import flow_executor
+
+        result = flow_executor(
+            message={},
+            consumer_name="test",
+            metadatas={"worker": "flow_executor"},
+        )
+        assert result == {"error": "missing task_id"}
+
+        _write_report("test_flow_executor_missing_task_id", [
+            "Sent message without task_id to flow_executor",
+            f"Result: {result}",
+            "PASS",
+        ])
+
+    def test_flow_executor_task_not_in_db(self):
+        from unittest.mock import patch
+
+        with patch("src.workers.flow_executor.get_task", return_value=None):
+            from src.workers.flow_executor import flow_executor
+
+            result = flow_executor(
+                message={"task_id": "nonexistent-id"},
+                consumer_name="test",
+                metadatas={"worker": "flow_executor"},
+            )
+            assert result == {"error": "task not found"}
+
+        _write_report("test_flow_executor_task_not_in_db", [
+            "Sent nonexistent task_id to flow_executor",
+            f"Result: {result}",
             "PASS",
         ])

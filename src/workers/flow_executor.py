@@ -1,11 +1,9 @@
-"""Kafka worker — consumes flow.tasks.in and executes the resolved pipeline.
+"""Kafka worker — consumes flow.tasks.in and executes DAG execution plans.
 
-Supports two execution modes:
-  - DAG mode: task has an execution_plan -> uses the DAG runner
-  - Legacy mode: task has a resolved_flow_definition -> uses the static flow executor
+Each task has an execution_plan (built by the DAG planner at creation time).
+The worker reconstructs the plan, runs it via the DAG runner, and updates
+the task status in PostgreSQL.
 """
-
-import os
 
 from framework.commons.logger import logger
 from framework.tracing import get_tracer
@@ -16,9 +14,6 @@ from framework.decorators import (
 )
 
 from src.config import Config
-from src.core.context import ExecutionContext
-from src.core.executor import execute_flow
-from src.core.operators.base import TerminateFlowException
 from src.services.task_service import update_task_status, get_task
 
 tracer = get_tracer()
@@ -47,11 +42,7 @@ def _get_kafka_consumer_ref():
 )
 @rate_limit(rps=100, burst=100)
 def flow_executor(message: dict, consumer_name: str, metadatas: dict) -> dict:
-    """Execute a flow pipeline for a task.
-
-    Routes to DAG runner if the task has an execution_plan,
-    otherwise falls back to the legacy static flow executor.
-    """
+    """Execute a DAG execution plan for a task."""
     task_id = message.get("task_id")
     if not task_id:
         logger.error("[FLOW_EXECUTOR] Message missing task_id, skipping")
@@ -68,21 +59,17 @@ def flow_executor(message: dict, consumer_name: str, metadatas: dict) -> dict:
             span.set_attribute("task.error", "task not found")
             return {"error": "task not found"}
 
-        # Route to DAG or legacy executor
-        if task.get("execution_plan"):
-            return _execute_dag(task, message, span)
-        elif task.get("resolved_flow_definition"):
-            return _execute_legacy(task, message, span)
-        else:
-            logger.error(f"[FLOW_EXECUTOR] Task {task_id} has no execution plan or flow definition")
-            update_task_status(task_id, "FAILED", error={"message": "No execution plan or flow definition"})
+        if not task.get("execution_plan"):
+            logger.error(f"[FLOW_EXECUTOR] Task {task_id} has no execution plan")
+            update_task_status(task_id, "FAILED", error={"message": "No execution plan"})
             return {"error": "no execution plan"}
+
+        return _execute_dag(task, message, span)
 
 
 def _execute_dag(task: dict, message: dict, span):
-    """Execute a task using the dynamic DAG runner."""
+    """Execute a task using the DAG runner."""
     task_id = task["id"]
-    span.set_attribute("task.mode", "dag")
 
     from src.dag.planner import ExecutionPlan, ExecutionBranch, PlanningError
     from src.dag.catalogue import get_node
@@ -100,7 +87,6 @@ def _execute_dag(task: dict, message: dict, span):
         context = dict(input_data)
 
         # Add the detected input type's value to context
-        # e.g. for youtube_url input, context["youtube_url"] = url value
         if plan.input_type == "youtube_url" and "url" in input_data:
             context["youtube_url"] = input_data["url"]
         elif plan.input_type == "audio_path" and "file_path" in input_data:
@@ -115,80 +101,16 @@ def _execute_dag(task: dict, message: dict, span):
             final_output=result,
         )
 
-        logger.info(f"[FLOW_EXECUTOR] Task {task_id} completed (DAG mode)")
+        logger.info(f"[FLOW_EXECUTOR] Task {task_id} completed")
         return {"task_id": task_id, "status": "COMPLETED", "result": result}
 
     except (DAGExecutionError, PlanningError, Exception) as e:
-        logger.error(f"[FLOW_EXECUTOR] Task {task_id} failed (DAG): {e}")
+        logger.error(f"[FLOW_EXECUTOR] Task {task_id} failed: {e}")
         span.set_attribute("task.status", "FAILED")
         span.set_attribute("task.error", str(e))
         update_task_status(
             task_id,
             "FAILED",
-            error={"message": str(e)},
-        )
-        raise
-
-
-def _execute_legacy(task: dict, message: dict, span):
-    """Execute a task using the legacy static flow executor."""
-    task_id = task["id"]
-    span.set_attribute("task.mode", "legacy")
-
-    flow_def = task["resolved_flow_definition"]
-    flow_id = flow_def.get("flow_id", "unknown")
-    span.set_attribute("flow.id", flow_id)
-
-    workflow_input = {k: v for k, v in message.items() if k not in ("task_id", "retry_count")}
-
-    env = {
-        "AI_SERVICE_URL": Config.AI_SERVICE_URL,
-        "AI_STT_URL": Config.AI_STT_URL,
-        "AI_STT_TOKEN": Config.AI_STT_TOKEN,
-        "AI_NER_URL": Config.AI_NER_URL,
-        "AI_TRANSLATE_URL": Config.AI_TRANSLATE_URL,
-        "AI_LANGDETECT_URL": Config.AI_LANGDETECT_URL,
-        "AI_SENTIMENT_URL": Config.AI_SENTIMENT_URL,
-        "AI_SUMMARY_URL": Config.AI_SUMMARY_URL,
-        "AI_TAXONOMY_URL": Config.AI_TAXONOMY_URL,
-        "DEV_MODE": str(Config.DEV_MODE),
-    }
-
-    context = ExecutionContext(workflow_input, env)
-    update_task_status(task_id, "RUNNING")
-
-    try:
-        result = execute_flow(flow_def, context, task_id)
-
-        if isinstance(result, dict) and result.get("_terminated"):
-            status = result.get("status", "TERMINATED")
-            span.set_attribute("task.status", status)
-            update_task_status(
-                task_id, status,
-                step_results=context.steps,
-                workflow_variables=context.variables,
-                final_output=result.get("output"),
-                error={"reason": result.get("reason")},
-            )
-        else:
-            span.set_attribute("task.status", "COMPLETED")
-            update_task_status(
-                task_id, "COMPLETED",
-                step_results=context.steps,
-                workflow_variables=context.variables,
-                final_output=result,
-            )
-
-        logger.info(f"[FLOW_EXECUTOR] Task {task_id} completed (legacy mode)")
-        return {"task_id": task_id, "status": "COMPLETED", "result": result}
-
-    except Exception as e:
-        logger.error(f"[FLOW_EXECUTOR] Task {task_id} failed (legacy): {e}")
-        span.set_attribute("task.status", "FAILED")
-        update_task_status(
-            task_id, "FAILED",
-            step_results=context.steps,
-            workflow_variables=context.variables,
             error={"message": str(e)},
         )
         raise
