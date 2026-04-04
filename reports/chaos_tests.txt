@@ -250,3 +250,246 @@
   Next call succeeded
   PASS
 ======================================================================
+
+======================================================================
+  TEST: test_db_dies_during_status_update
+  TIME: 2026-04-04 14:22:42
+  Task e1326bc1-864b-407f-8d34-7ebf4b01ee77: DAG executed successfully
+  DB died during update_task_status -> OperationalError raised
+  Task status in DB: PENDING (still PENDING, recoverable)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_db_dies_during_task_creation
+  TIME: 2026-04-04 14:22:42
+  DB died during commit in create_task
+  OperationalError raised, rollback called
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_db_intermittent_failure_recovery
+  TIME: 2026-04-04 14:22:42
+  Task 63f792d1-357a-4c4c-ac3a-261908db03ea: DB failed intermittently
+  Status went PENDING -> RUNNING -> (fail) -> COMPLETED
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_kafka_publish_failure_task_stays_pending
+  TIME: 2026-04-04 14:22:42
+  Task 6d1f91b8-71a6-49bf-b820-e0df1675d794: created in DB
+  Kafka publish failed -> task stays PENDING (recoverable)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_kafka_output_failure_task_still_completed_in_db
+  TIME: 2026-04-04 14:22:46
+  Task 1af7f1f5-f5b8-4296-8869-c55c1286cba0: DAG executed, DB updated to COMPLETED
+  Even if Kafka output fails, DB has the result
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_http_timeout_propagates
+  TIME: 2026-04-04 14:22:48
+  Simulated: HTTP request timeout
+  HttpClientError raised with timeout message
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_slow_service_retries_then_fails
+  TIME: 2026-04-04 14:22:50
+  Attempts: 3
+  All 3 retries timed out -> HttpClientError raised
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_slow_service_succeeds_on_retry
+  TIME: 2026-04-04 14:22:51
+  Attempts: 2
+  First attempt: timeout, Second attempt: success
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_breaker_trips_mid_flow
+  TIME: 2026-04-04 14:22:57
+  Breaker state: open
+  Task correctly marked as FAILED
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_breaker_recovers_flow_succeeds
+  TIME: 2026-04-04 14:22:58
+  Tripped breaker -> open -> waited 1.5s -> closed
+  Next call succeeded
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_db_dies_during_status_update
+  TIME: 2026-04-04 14:25:56
+  Task 9a461a5b-b3dd-43f9-9717-5b6c1282a068: DAG executed successfully
+  DB died during update_task_status -> OperationalError raised
+  Task status in DB: PENDING (still PENDING, recoverable)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_db_dies_during_task_creation
+  TIME: 2026-04-04 14:25:56
+  DB died during commit in create_task
+  OperationalError raised, rollback called
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_db_intermittent_failure_recovery
+  TIME: 2026-04-04 14:25:56
+  Task eb2cd306-168e-4049-b78c-22d30f45f6d8: DB failed intermittently
+  Status went PENDING -> RUNNING -> (fail) -> COMPLETED
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_kafka_publish_failure_task_stays_pending
+  TIME: 2026-04-04 14:25:56
+  Task fdc4a901-00b2-40be-9605-dc491543dbda: created in DB
+  Kafka publish failed -> task stays PENDING (recoverable)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_kafka_output_failure_task_still_completed_in_db
+  TIME: 2026-04-04 14:25:59
+  Task 4c112a10-3fbc-43a7-ba03-1b480062f2fc: DAG executed, DB updated to COMPLETED
+  Even if Kafka output fails, DB has the result
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_http_timeout_propagates
+  TIME: 2026-04-04 14:26:01
+  Simulated: HTTP request timeout
+  HttpClientError raised with timeout message
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_slow_service_retries_then_fails
+  TIME: 2026-04-04 14:26:03
+  Attempts: 3
+  All 3 retries timed out -> HttpClientError raised
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_slow_service_succeeds_on_retry
+  TIME: 2026-04-04 14:26:04
+  Attempts: 2
+  First attempt: timeout, Second attempt: success
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_breaker_trips_mid_flow
+  TIME: 2026-04-04 14:26:10
+  Breaker state: open
+  Task correctly marked as FAILED
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_breaker_recovers_flow_succeeds
+  TIME: 2026-04-04 14:26:12
+  Tripped breaker -> open -> waited 1.5s -> closed
+  Next call succeeded
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_db_dies_during_status_update
+  TIME: 2026-04-04 14:27:57
+  Task 7ec30754-18af-4177-9b1f-c10a22da03aa: DAG executed successfully
+  DB died during update_task_status -> OperationalError raised
+  Task status in DB: PENDING (still PENDING, recoverable)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_db_dies_during_task_creation
+  TIME: 2026-04-04 14:27:57
+  DB died during commit in create_task
+  OperationalError raised, rollback called
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_db_intermittent_failure_recovery
+  TIME: 2026-04-04 14:27:57
+  Task 4d6feeb0-bf2a-4bac-b9b7-d7215d086d1f: DB failed intermittently
+  Status went PENDING -> RUNNING -> (fail) -> COMPLETED
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_kafka_publish_failure_task_stays_pending
+  TIME: 2026-04-04 14:27:57
+  Task 65db99de-d0dd-491d-8f43-11bdb1643194: created in DB
+  Kafka publish failed -> task stays PENDING (recoverable)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_kafka_output_failure_task_still_completed_in_db
+  TIME: 2026-04-04 14:27:59
+  Task 9473c477-80f8-48c5-a393-6cdac3179cf1: DAG executed, DB updated to COMPLETED
+  Even if Kafka output fails, DB has the result
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_http_timeout_propagates
+  TIME: 2026-04-04 14:28:01
+  Simulated: HTTP request timeout
+  HttpClientError raised with timeout message
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_slow_service_retries_then_fails
+  TIME: 2026-04-04 14:28:03
+  Attempts: 3
+  All 3 retries timed out -> HttpClientError raised
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_slow_service_succeeds_on_retry
+  TIME: 2026-04-04 14:28:04
+  Attempts: 2
+  First attempt: timeout, Second attempt: success
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_breaker_trips_mid_flow
+  TIME: 2026-04-04 14:28:10
+  Breaker state: open
+  Task correctly marked as FAILED
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_breaker_recovers_flow_succeeds
+  TIME: 2026-04-04 14:28:11
+  Tripped breaker -> open -> waited 1.5s -> closed
+  Next call succeeded
+  PASS
+======================================================================

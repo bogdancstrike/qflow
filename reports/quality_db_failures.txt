@@ -334,3 +334,179 @@
   Result: rollback() called, session closed
   PASS
 ======================================================================
+
+======================================================================
+  TEST: test_get_task_db_down
+  TIME: 2026-04-04 14:22:38
+  Simulated: DB connection refused during get_task
+  Result: OperationalError raised (expected)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_list_tasks_db_down
+  TIME: 2026-04-04 14:22:38
+  Simulated: DB connection refused during list_tasks
+  Result: OperationalError raised (expected)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_update_status_db_down
+  TIME: 2026-04-04 14:22:38
+  Simulated: DB connection refused during update_task_status
+  Result: OperationalError raised (expected)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_delete_task_db_down
+  TIME: 2026-04-04 14:22:38
+  Simulated: DB connection refused during delete_task
+  Result: OperationalError raised (expected)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_create_task_db_down
+  TIME: 2026-04-04 14:23:45
+  Simulated: DB connection refused during create_task
+  Result: OperationalError raised (expected)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_get_task_db_down
+  TIME: 2026-04-04 14:23:45
+  Simulated: DB connection refused during get_task
+  Result: OperationalError raised (expected)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_list_tasks_db_down
+  TIME: 2026-04-04 14:23:45
+  Simulated: DB connection refused during list_tasks
+  Result: OperationalError raised (expected)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_update_status_db_down
+  TIME: 2026-04-04 14:23:45
+  Simulated: DB connection refused during update_task_status
+  Result: OperationalError raised (expected)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_delete_task_db_down
+  TIME: 2026-04-04 14:23:45
+  Simulated: DB connection refused during delete_task
+  Result: OperationalError raised (expected)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_db_commit_failure_rolls_back
+  TIME: 2026-04-04 14:23:45
+  Simulated: commit fails with 'disk full'
+  Result: rollback() called, session closed
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_create_task_db_down
+  TIME: 2026-04-04 14:29:37
+  Simulated: DB connection refused during create_task
+  Result: OperationalError raised (expected)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_get_task_db_down
+  TIME: 2026-04-04 14:29:37
+  Simulated: DB connection refused during get_task
+  Result: OperationalError raised (expected)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_list_tasks_db_down
+  TIME: 2026-04-04 14:29:37
+  Simulated: DB connection refused during list_tasks
+  Result: OperationalError raised (expected)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_update_status_db_down
+  TIME: 2026-04-04 14:29:37
+  Simulated: DB connection refused during update_task_status
+  Result: OperationalError raised (expected)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_delete_task_db_down
+  TIME: 2026-04-04 14:29:37
+  Simulated: DB connection refused during delete_task
+  Result: OperationalError raised (expected)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_db_commit_failure_rolls_back
+  TIME: 2026-04-04 14:29:37
+  Simulated: commit fails with 'disk full'
+  Result: rollback() called, session closed
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_create_task_db_down
+  TIME: 2026-04-04 14:31:27
+  Simulated: DB connection refused during create_task
+  Result: OperationalError raised (expected)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_get_task_db_down
+  TIME: 2026-04-04 14:31:27
+  Simulated: DB connection refused during get_task
+  Result: OperationalError raised (expected)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_list_tasks_db_down
+  TIME: 2026-04-04 14:31:27
+  Simulated: DB connection refused during list_tasks
+  Result: OperationalError raised (expected)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_update_status_db_down
+  TIME: 2026-04-04 14:31:27
+  Simulated: DB connection refused during update_task_status
+  Result: OperationalError raised (expected)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_delete_task_db_down
+  TIME: 2026-04-04 14:31:27
+  Simulated: DB connection refused during delete_task
+  Result: OperationalError raised (expected)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_db_commit_failure_rolls_back
+  TIME: 2026-04-04 14:31:27
+  Simulated: commit fails with 'disk full'
+  Result: rollback() called, session closed
+  PASS
+======================================================================

@@ -1,0 +1,1585 @@
+
+======================================================================
+  TEST: test_health
+  TIME: 2026-04-04 09:48:01
+  Status: 200
+  Body: {
+  "status": "healthy",
+  "checks": {
+    "postgres": {
+      "status": "ok",
+      "latency_ms": 0
+    },
+    "redis": {
+      "status": "ok",
+      "latency_ms": 1
+    },
+    "kafka": {
+      "status": "ok",
+      "latency_ms": 2
+    }
+  },
+  "dev_mode": true
+}
+  Resources: {'user_time_s': 0.11, 'system_time_s': 0.01, 'max_rss_mb': 41.1}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_liveness
+  TIME: 2026-04-04 09:48:01
+  Status: 200
+  Body: {'status': 'alive'}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_readiness
+  TIME: 2026-04-04 09:48:01
+  Status: 200
+  Body: {'status': 'ready', 'checks': {'postgres': 'ok', 'kafka': 'ok'}}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_flow_catalogue
+  TIME: 2026-04-04 09:48:01
+  Count: 9
+  Valid outputs: ['iptc_tags', 'keywords', 'lang_meta', 'ner_result', 'sentiment_result', 'summary', 'text_en']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_create_and_poll_text_ner
+  TIME: 2026-04-04 09:48:05
+  Task: text -> ner
+  Task ID: 6c8afe43-222e-4ac5-89ed-d4418f23b131
+  Flow: flow_text_to_ner
+  Create time: 0.01s
+  Poll time: 3.52s
+  Total time: 3.53s
+  Final status: COMPLETED
+  Resources: {'user_time_s': 0.11, 'system_time_s': 0.02, 'max_rss_mb': 41.1}
+  Output keys: ['entities', 'language_detected']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_create_and_poll_text_sentiment
+  TIME: 2026-04-04 09:48:10
+  Task: text -> sentiment
+  Task ID: d46a9281-9112-4fc0-bb9d-6ef46c1f36ea
+  Flow: flow_text_to_sentiment
+  Create time: 0.01s
+  Poll time: 5.03s
+  Total time: 5.04s
+  Final status: COMPLETED
+  Resources: {'user_time_s': 0.12, 'system_time_s': 0.02, 'max_rss_mb': 41.1}
+  Output keys: ['score', 'sentiment', 'language_detected']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_create_and_poll_text_summary
+  TIME: 2026-04-04 09:48:14
+  Task: text -> summary
+  Task ID: 478f3ffb-82c8-4a67-b6b4-16b4b39e8a64
+  Flow: flow_text_to_summary
+  Create time: 0.01s
+  Poll time: 4.03s
+  Total time: 4.04s
+  Final status: COMPLETED
+  Resources: {'user_time_s': 0.13, 'system_time_s': 0.02, 'max_rss_mb': 41.1}
+  Output keys: ['summary', 'language_detected']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_create_and_poll_file_upload_stt
+  TIME: 2026-04-04 09:48:15
+  Task: file_upload -> stt
+  Task ID: 3f929fe0-1eec-474d-914e-3b658cb08bf1
+  Flow: flow_video_to_stt
+  Create time: 0.00s
+  Poll time: 1.01s
+  Total time: 1.01s
+  Final status: COMPLETED
+  Resources: {'user_time_s': 0.13, 'system_time_s': 0.02, 'max_rss_mb': 41.1}
+  Output keys: ['text', 'language']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_create_and_poll_youtube_link_stt
+  TIME: 2026-04-04 09:48:19
+  Task: youtube_link -> stt
+  Task ID: 5b493860-24c6-4ce9-93b1-1d279d02b421
+  Flow: flow_youtube_to_stt
+  Create time: 0.01s
+  Poll time: 3.52s
+  Total time: 3.53s
+  Final status: COMPLETED
+  Resources: {'user_time_s': 0.13, 'system_time_s': 0.02, 'max_rss_mb': 41.1}
+  Output keys: ['text', 'language']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_list_all
+  TIME: 2026-04-04 09:48:19
+  Tasks returned: 5
+  has_more: False
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_list_with_filters
+  TIME: 2026-04-04 09:48:19
+  Filter: status=COMPLETED, limit=5
+  Tasks: 5
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_empty_body
+  TIME: 2026-04-04 09:48:19
+  Status: 400
+  Body: {'message': 'Validation failed', 'errors': ["'input_type' is required", "'desired_output' is required"]}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_invalid_input_type
+  TIME: 2026-04-04 09:48:19
+  Status: 400
+  Body: {'message': 'Validation failed', 'errors': ["Invalid input_type 'invalid'. Valid: ['file_upload', 'text', 'youtube_link']"]}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_invalid_desired_output
+  TIME: 2026-04-04 09:48:19
+  Status: 400
+  Body: {'message': 'Validation failed', 'errors': ["Invalid desired_output 'nonexistent'. Valid: ['language_detect', 'ner', 'sentiment', 'stt', 'summary', 'taxonomy', 'translate']"]}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_invalid_combination
+  TIME: 2026-04-04 09:48:19
+  Status: 400
+  Body: {'message': 'Validation failed', 'errors': ["Input type 'text' is not supported for desired_output 'stt'. Valid input types: ['file_upload', 'youtube_link']"]}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_nonexistent_task
+  TIME: 2026-04-04 09:48:19
+  Status: 404
+  Body: {'message': 'Task 0f25ca22-2264-453a-94b5-19d3168f2062 not found'}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_delete_nonexistent
+  TIME: 2026-04-04 09:48:19
+  Status: 404
+  Body: {'message': 'Task 2da4e952-b800-4d87-9ec1-798809d341a6 not found'}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_malformed_json
+  TIME: 2026-04-04 09:48:19
+  Status: 400
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_create_and_delete
+  TIME: 2026-04-04 09:48:19
+  Task ID: 22334e51-1ae1-44b0-80d1-bfa7fd6c1d05
+  Created -> Deleted -> Verified 404
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_jaeger_has_services
+  TIME: 2026-04-04 09:48:19
+  Services: ['ai-flow-orchestrator']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_health
+  TIME: 2026-04-04 14:23:48
+  GET /api/health -> HTTP 200 (5ms)
+  Status: healthy
+  Checks: {
+  "postgres": {
+    "status": "ok",
+    "latency_ms": 0
+  },
+  "redis": {
+    "status": "ok",
+    "latency_ms": 1
+  },
+  "kafka": {
+    "status": "ok",
+    "latency_ms": 2
+  }
+}
+  Resources: {'user_time_s': 0.11, 'system_time_s': 0.01, 'max_rss_mb': 41.9}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_liveness
+  TIME: 2026-04-04 14:23:48
+  GET /api/liveness -> HTTP 200 (1ms)
+  Body: {'status': 'alive'}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_readiness
+  TIME: 2026-04-04 14:23:48
+  GET /api/readiness -> HTTP 200 (2ms)
+  Body: {'status': 'ready', 'checks': {'postgres': 'ok', 'kafka': 'ok'}}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_flow_catalogue
+  TIME: 2026-04-04 14:23:48
+  GET /api/v1/flows -> HTTP 200 (1ms)
+  Nodes: 9
+  Valid outputs: ['iptc_tags', 'keywords', 'lang_meta', 'ner_result', 'sentiment_result', 'summary', 'text_en']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_empty_body
+  TIME: 2026-04-04 14:23:48
+  POST empty body -> HTTP 400 (0ms)
+  Response: {'message': 'Validation failed', 'errors': ["'input_type' is required", "'desired_output' is required"]}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_invalid_output_type
+  TIME: 2026-04-04 14:23:48
+  POST invalid output -> HTTP 400 (1ms)
+  Response: {'message': 'Validation failed', 'errors': ["Unknown output type(s): ['nonexistent_output']. Valid: ['iptc_tags', 'keywords', 'lang_meta', 'ner_result', 'sentiment_result', 'summary', 'text_en']"]}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_empty_outputs_list
+  TIME: 2026-04-04 14:23:48
+  POST empty outputs -> HTTP 400 (1ms)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_unclassifiable_input
+  TIME: 2026-04-04 14:23:48
+  POST unknown input_data fields -> HTTP 400 (1ms)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_malformed_json
+  TIME: 2026-04-04 14:23:48
+  POST malformed JSON -> HTTP 400
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_template_injection
+  TIME: 2026-04-04 14:23:48
+  POST template injection -> HTTP 400 (1ms)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_jaeger_has_services
+  TIME: 2026-04-04 14:23:48
+  Services: ['ai-flow-orchestrator', 'jaeger-all-in-one']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_health
+  TIME: 2026-04-04 14:24:32
+  GET /api/health -> HTTP 200 (5ms)
+  Status: healthy
+  Checks: {
+  "postgres": {
+    "status": "ok",
+    "latency_ms": 0
+  },
+  "redis": {
+    "status": "ok",
+    "latency_ms": 1
+  },
+  "kafka": {
+    "status": "ok",
+    "latency_ms": 2
+  }
+}
+  Resources: {'user_time_s': 0.1, 'system_time_s': 0.01, 'max_rss_mb': 41.9}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_liveness
+  TIME: 2026-04-04 14:24:32
+  GET /api/liveness -> HTTP 200 (1ms)
+  Body: {'status': 'alive'}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_readiness
+  TIME: 2026-04-04 14:24:32
+  GET /api/readiness -> HTTP 200 (1ms)
+  Body: {'status': 'ready', 'checks': {'postgres': 'ok', 'kafka': 'ok'}}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_flow_catalogue
+  TIME: 2026-04-04 14:24:32
+  GET /api/v1/flows -> HTTP 200 (1ms)
+  Nodes: 9
+  Valid outputs: ['iptc_tags', 'keywords', 'lang_meta', 'ner_result', 'sentiment_result', 'summary', 'text_en']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_text_to_ner
+  TIME: 2026-04-04 14:24:58
+  POST /api/v1/tasks
+    Body: input_data={"text": "John Smith lives in Berlin and works at Acme Corp."}, outputs=['ner_result']
+    Create: HTTP 201, 5ms
+    Task ID: 3b5c58dd-4109-4081-be3f-94730367a62d
+    Input type: text
+    Plan: [] + 1 branches
+    Poll count: 50
+    Poll times: p50=3ms, p95=4ms
+    Final status: COMPLETED
+    Total time: 164ms
+    Resources: {'user_time_s': 0.14, 'system_time_s': 0.01, 'max_rss_mb': 41.9}
+    Output keys: ['ner_result']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_text_to_sentiment
+  TIME: 2026-04-04 14:25:00
+  POST /api/v1/tasks
+    Body: input_data={"text": "I absolutely love this product! It's amazing quality."}, outputs=['sentiment_result']
+    Create: HTTP 201, 6ms
+    Task ID: 6f02c9fe-ee56-4078-8908-76ed3bfe84f0
+    Input type: text
+    Plan: [] + 1 branches
+    Poll count: 4
+    Poll times: p50=3ms, p95=3ms
+    Final status: COMPLETED
+    Total time: 17ms
+    Resources: {'user_time_s': 0.14, 'system_time_s': 0.01, 'max_rss_mb': 41.9}
+    Output keys: ['sentiment_result']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_text_to_summary
+  TIME: 2026-04-04 14:25:00
+  POST /api/v1/tasks
+    Body: input_data={"text": "Technology is transforming the global economy in unprecedented ways."}, outputs=['summary']
+    Create: HTTP 201, 6ms
+    Task ID: da633e2e-4abd-4e1c-88a7-03e0f266a320
+    Input type: text
+    Plan: [] + 1 branches
+    Poll count: 1
+    Poll times: p50=3ms, p95=3ms
+    Final status: COMPLETED
+    Total time: 9ms
+    Resources: {'user_time_s': 0.14, 'system_time_s': 0.01, 'max_rss_mb': 41.9}
+    Output keys: ['summary']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_text_to_iptc
+  TIME: 2026-04-04 14:25:02
+  POST /api/v1/tasks
+    Body: input_data={"text": "The government announced new economic policies for 2026."}, outputs=['iptc_tags']
+    Create: HTTP 201, 5ms
+    Task ID: 5bb6a06d-97f9-4384-b28e-a5f3dac24a5e
+    Input type: text
+    Plan: [] + 1 branches
+    Poll count: 3
+    Poll times: p50=3ms, p95=3ms
+    Final status: COMPLETED
+    Total time: 13ms
+    Resources: {'user_time_s': 0.15, 'system_time_s': 0.01, 'max_rss_mb': 41.9}
+    Output keys: ['iptc_tags']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_text_to_keywords
+  TIME: 2026-04-04 14:25:03
+  POST /api/v1/tasks
+    Body: input_data={"text": "Artificial intelligence is revolutionizing healthcare diagnostics."}, outputs=['keywords']
+    Create: HTTP 201, 6ms
+    Task ID: a98ff078-3daa-4bff-8d92-1e93b7e9a1a8
+    Input type: text
+    Plan: [] + 1 branches
+    Poll count: 3
+    Poll times: p50=3ms, p95=3ms
+    Final status: COMPLETED
+    Total time: 14ms
+    Resources: {'user_time_s': 0.15, 'system_time_s': 0.02, 'max_rss_mb': 41.9}
+    Output keys: ['keywords']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_text_multi_output
+  TIME: 2026-04-04 14:25:10
+  POST /api/v1/tasks
+    Body: input_data={"text": "Maria Garcia loves AI technology and works at Google."}, outputs=['ner_result', 'sentiment_result', 'summary']
+    Create: HTTP 201, 6ms
+    Task ID: fd956556-2dbe-4ba5-9b4d-6e358c829e15
+    Input type: text
+    Plan: [] + 3 branches
+    Poll count: 14
+    Poll times: p50=3ms, p95=4ms
+    Final status: COMPLETED
+    Total time: 48ms
+    Resources: {'user_time_s': 0.16, 'system_time_s': 0.02, 'max_rss_mb': 41.9}
+    Output keys: ['summary', 'ner_result', 'sentiment_result']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_text_all_outputs
+  TIME: 2026-04-04 14:25:18
+  POST /api/v1/tasks
+    Body: input_data={"text": "Apple released a new product at their annual keynote event in Cupertino."}, outputs=['ner_result', 'sentiment_result', 'summary', 'iptc_tags', 'keywords']
+    Create: HTTP 201, 6ms
+    Task ID: cfa32bdc-3919-410a-9b70-f31ad3833e8a
+    Input type: text
+    Plan: [] + 5 branches
+    Poll count: 15
+    Poll times: p50=3ms, p95=4ms
+    Final status: COMPLETED
+    Total time: 50ms
+    Resources: {'user_time_s': 0.17, 'system_time_s': 0.02, 'max_rss_mb': 41.9}
+    Output keys: ['summary', 'keywords', 'iptc_tags', 'ner_result', 'sentiment_result']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_file_to_ner
+  TIME: 2026-04-04 14:25:20
+  POST /api/v1/tasks
+    Body: input_data={"file_path": "/tmp/test.mp4"}, outputs=['ner_result']
+    Create: HTTP 201, 12ms
+    Task ID: ca1196aa-b33c-4dbd-a952-2e7b3e13f61d
+    Input type: audio_path
+    Plan: ['stt'] + 1 branches
+    Poll count: 5
+    Poll times: p50=2ms, p95=3ms
+    Final status: COMPLETED
+    Total time: 23ms
+    Resources: {'user_time_s': 0.18, 'system_time_s': 0.02, 'max_rss_mb': 41.9}
+    Output keys: ['ner_result']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_file_to_sentiment
+  TIME: 2026-04-04 14:25:24
+  POST /api/v1/tasks
+    Body: input_data={"file_path": "/tmp/test.mp4"}, outputs=['sentiment_result']
+    Create: HTTP 201, 13ms
+    Task ID: 194a8f0a-b88b-4ef1-aefa-8b648462a3b8
+    Input type: audio_path
+    Plan: ['stt'] + 1 branches
+    Poll count: 8
+    Poll times: p50=3ms, p95=4ms
+    Final status: COMPLETED
+    Total time: 36ms
+    Resources: {'user_time_s': 0.18, 'system_time_s': 0.02, 'max_rss_mb': 41.9}
+    Output keys: ['sentiment_result']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_file_to_summary
+  TIME: 2026-04-04 14:25:27
+  POST /api/v1/tasks
+    Body: input_data={"file_path": "/tmp/audio.wav"}, outputs=['summary']
+    Create: HTTP 201, 7ms
+    Task ID: a3c78925-acf0-4863-81ea-6884f161df3e
+    Input type: audio_path
+    Plan: ['stt'] + 1 branches
+    Poll count: 5
+    Poll times: p50=3ms, p95=4ms
+    Final status: COMPLETED
+    Total time: 23ms
+    Resources: {'user_time_s': 0.19, 'system_time_s': 0.02, 'max_rss_mb': 41.9}
+    Output keys: ['summary']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_file_multi_output
+  TIME: 2026-04-04 14:25:32
+  POST /api/v1/tasks
+    Body: input_data={"file_path": "/tmp/test.mp4"}, outputs=['ner_result', 'summary', 'iptc_tags']
+    Create: HTTP 201, 6ms
+    Task ID: f38000cb-56b2-45dd-8bfa-47eae3ff1f17
+    Input type: audio_path
+    Plan: ['stt'] + 3 branches
+    Poll count: 11
+    Poll times: p50=2ms, p95=4ms
+    Final status: COMPLETED
+    Total time: 34ms
+    Resources: {'user_time_s': 0.2, 'system_time_s': 0.02, 'max_rss_mb': 41.9}
+    Output keys: ['summary', 'iptc_tags', 'ner_result']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_youtube_to_ner
+  TIME: 2026-04-04 14:25:35
+  POST /api/v1/tasks
+    Body: input_data={"url": "https://youtube.com/watch?v=test123"}, outputs=['ner_result']
+    Create: HTTP 201, 4ms
+    Task ID: 1f8f4567-1ea9-426b-9b89-462784271946
+    Input type: youtube_url
+    Plan: ['ytdlp_download', 'stt'] + 1 branches
+    Poll count: 6
+    Poll times: p50=2ms, p95=3ms
+    Final status: COMPLETED
+    Total time: 18ms
+    Resources: {'user_time_s': 0.2, 'system_time_s': 0.02, 'max_rss_mb': 41.9}
+    Output keys: ['ner_result']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_youtube_to_sentiment
+  TIME: 2026-04-04 14:25:39
+  POST /api/v1/tasks
+    Body: input_data={"url": "https://youtu.be/abc456"}, outputs=['sentiment_result']
+    Create: HTTP 201, 5ms
+    Task ID: a08b38e9-2603-4c0f-9d6b-7b0cd899e5ae
+    Input type: youtube_url
+    Plan: ['ytdlp_download', 'stt'] + 1 branches
+    Poll count: 8
+    Poll times: p50=3ms, p95=4ms
+    Final status: COMPLETED
+    Total time: 29ms
+    Resources: {'user_time_s': 0.21, 'system_time_s': 0.02, 'max_rss_mb': 41.9}
+    Output keys: ['sentiment_result']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_youtube_to_summary
+  TIME: 2026-04-04 14:25:41
+  POST /api/v1/tasks
+    Body: input_data={"url": "https://youtube.com/watch?v=test789"}, outputs=['summary']
+    Create: HTTP 201, 7ms
+    Task ID: 488114e5-05e2-41f0-9132-244c1ded4a70
+    Input type: youtube_url
+    Plan: ['ytdlp_download', 'stt'] + 1 branches
+    Poll count: 4
+    Poll times: p50=3ms, p95=3ms
+    Final status: COMPLETED
+    Total time: 18ms
+    Resources: {'user_time_s': 0.21, 'system_time_s': 0.02, 'max_rss_mb': 41.9}
+    Output keys: ['summary']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_youtube_multi_output
+  TIME: 2026-04-04 14:25:50
+  POST /api/v1/tasks
+    Body: input_data={"url": "https://youtube.com/watch?v=multi"}, outputs=['ner_result', 'sentiment_result', 'summary', 'keywords']
+    Create: HTTP 201, 6ms
+    Task ID: dd815737-1f08-4006-b21b-cac14cc1c652
+    Input type: youtube_url
+    Plan: ['ytdlp_download', 'stt'] + 4 branches
+    Poll count: 16
+    Poll times: p50=3ms, p95=4ms
+    Final status: COMPLETED
+    Total time: 50ms
+    Resources: {'user_time_s': 0.23, 'system_time_s': 0.02, 'max_rss_mb': 41.9}
+    Output keys: ['summary', 'keywords', 'ner_result', 'sentiment_result']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_text_with_type_hint
+  TIME: 2026-04-04 14:25:50
+  POST with input_type=text, input_data as string
+  HTTP 201, task_id=ae93b001-4e92-4f1a-a66a-35a7eded8140
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_youtube_with_type_hint
+  TIME: 2026-04-04 14:25:50
+  POST with input_type=youtube_link (hint), input_data as string URL
+  HTTP 201, detected input_type=youtube_url
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_list_all
+  TIME: 2026-04-04 14:25:50
+  GET /api/v1/tasks -> HTTP 200 (4ms)
+  Tasks returned: 18
+  has_more: False
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_list_with_filters
+  TIME: 2026-04-04 14:25:50
+  GET /api/v1/tasks?status=COMPLETED&limit=5 -> HTTP 200 (3ms)
+  Tasks: 5
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_create_and_delete
+  TIME: 2026-04-04 14:25:50
+  Created task 1ff63349-7153-4d2c-a5c9-b4d1f8e6d3ba
+  DELETE -> HTTP 200 (4ms)
+  GET after delete -> HTTP 404 (404 expected)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_empty_body
+  TIME: 2026-04-04 14:25:50
+  POST empty body -> HTTP 400 (1ms)
+  Response: {'message': 'Validation failed', 'errors': ["'input_data' must be a non-empty JSON object"]}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_invalid_output_type
+  TIME: 2026-04-04 14:25:50
+  POST invalid output -> HTTP 400 (3ms)
+  Response: {'message': 'Validation failed', 'errors': ["Unknown output type(s): ['nonexistent_output']. Valid: ['iptc_tags', 'keywords', 'lang_meta', 'ner_result', 'sentiment_result', 'summary', 'text_en']"]}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_empty_outputs_list
+  TIME: 2026-04-04 14:25:50
+  POST empty outputs -> HTTP 400 (1ms)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_unclassifiable_input
+  TIME: 2026-04-04 14:25:50
+  POST unknown input_data fields -> HTTP 400 (1ms)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_nonexistent_task
+  TIME: 2026-04-04 14:25:50
+  GET nonexistent task -> HTTP 404 (2ms)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_delete_nonexistent
+  TIME: 2026-04-04 14:25:50
+  DELETE nonexistent task -> HTTP 404 (2ms)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_malformed_json
+  TIME: 2026-04-04 14:25:50
+  POST malformed JSON -> HTTP 400
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_template_injection
+  TIME: 2026-04-04 14:25:50
+  POST template injection -> HTTP 400 (1ms)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_jaeger_has_services
+  TIME: 2026-04-04 14:25:50
+  Services: ['ai-flow-orchestrator', 'jaeger-all-in-one']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_health
+  TIME: 2026-04-04 14:26:12
+  GET /api/health -> HTTP 200 (5ms)
+  Status: healthy
+  Checks: {
+  "postgres": {
+    "status": "ok",
+    "latency_ms": 0
+  },
+  "redis": {
+    "status": "ok",
+    "latency_ms": 1
+  },
+  "kafka": {
+    "status": "ok",
+    "latency_ms": 2
+  }
+}
+  Resources: {'user_time_s': 0.32, 'system_time_s': 0.02, 'max_rss_mb': 92.9}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_liveness
+  TIME: 2026-04-04 14:26:12
+  GET /api/liveness -> HTTP 200 (1ms)
+  Body: {'status': 'alive'}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_readiness
+  TIME: 2026-04-04 14:26:12
+  GET /api/readiness -> HTTP 200 (1ms)
+  Body: {'status': 'ready', 'checks': {'postgres': 'ok', 'kafka': 'ok'}}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_flow_catalogue
+  TIME: 2026-04-04 14:26:12
+  GET /api/v1/flows -> HTTP 200 (1ms)
+  Nodes: 9
+  Valid outputs: ['iptc_tags', 'keywords', 'lang_meta', 'ner_result', 'sentiment_result', 'summary', 'text_en']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_text_to_ner
+  TIME: 2026-04-04 14:26:15
+  POST /api/v1/tasks
+    Body: input_data={"text": "John Smith lives in Berlin and works at Acme Corp."}, outputs=['ner_result']
+    Create: HTTP 201, 6ms
+    Task ID: bcc07a0b-8c3d-4f9d-ac6a-490d4f13389d
+    Input type: text
+    Plan: [] + 1 branches
+    Poll count: 6
+    Poll times: p50=3ms, p95=4ms
+    Final status: COMPLETED
+    Total time: 25ms
+    Resources: {'user_time_s': 0.33, 'system_time_s': 0.02, 'max_rss_mb': 92.9}
+    Output keys: ['ner_result']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_text_to_sentiment
+  TIME: 2026-04-04 14:26:17
+  POST /api/v1/tasks
+    Body: input_data={"text": "I absolutely love this product! It's amazing quality."}, outputs=['sentiment_result']
+    Create: HTTP 201, 7ms
+    Task ID: ecfaed6e-f2b2-4ffb-9f04-3959f06713f5
+    Input type: text
+    Plan: [] + 1 branches
+    Poll count: 5
+    Poll times: p50=2ms, p95=3ms
+    Final status: COMPLETED
+    Total time: 19ms
+    Resources: {'user_time_s': 0.33, 'system_time_s': 0.03, 'max_rss_mb': 92.9}
+    Output keys: ['sentiment_result']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_text_to_summary
+  TIME: 2026-04-04 14:26:19
+  POST /api/v1/tasks
+    Body: input_data={"text": "Technology is transforming the global economy in unprecedented ways."}, outputs=['summary']
+    Create: HTTP 201, 7ms
+    Task ID: 7714bc87-786b-4480-9f9d-8876b7e2a067
+    Input type: text
+    Plan: [] + 1 branches
+    Poll count: 3
+    Poll times: p50=3ms, p95=3ms
+    Final status: COMPLETED
+    Total time: 16ms
+    Resources: {'user_time_s': 0.34, 'system_time_s': 0.03, 'max_rss_mb': 92.9}
+    Output keys: ['summary']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_text_to_iptc
+  TIME: 2026-04-04 14:26:19
+  POST /api/v1/tasks
+    Body: input_data={"text": "The government announced new economic policies for 2026."}, outputs=['iptc_tags']
+    Create: HTTP 201, 7ms
+    Task ID: 67cfced3-0537-4524-a094-55bc7d1ac644
+    Input type: text
+    Plan: [] + 1 branches
+    Poll count: 1
+    Poll times: p50=2ms, p95=2ms
+    Final status: COMPLETED
+    Total time: 9ms
+    Resources: {'user_time_s': 0.34, 'system_time_s': 0.03, 'max_rss_mb': 92.9}
+    Output keys: ['iptc_tags']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_text_to_keywords
+  TIME: 2026-04-04 14:26:21
+  POST /api/v1/tasks
+    Body: input_data={"text": "Artificial intelligence is revolutionizing healthcare diagnostics."}, outputs=['keywords']
+    Create: HTTP 201, 7ms
+    Task ID: 29984fc7-3859-47da-85e9-8d30a1806bbe
+    Input type: text
+    Plan: [] + 1 branches
+    Poll count: 3
+    Poll times: p50=3ms, p95=3ms
+    Final status: COMPLETED
+    Total time: 16ms
+    Resources: {'user_time_s': 0.34, 'system_time_s': 0.03, 'max_rss_mb': 92.9}
+    Output keys: ['keywords']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_text_multi_output
+  TIME: 2026-04-04 14:26:28
+  POST /api/v1/tasks
+    Body: input_data={"text": "Maria Garcia loves AI technology and works at Google."}, outputs=['ner_result', 'sentiment_result', 'summary']
+    Create: HTTP 201, 5ms
+    Task ID: 4bfcc345-48fb-4d7c-9ba4-1e52b79f8cf6
+    Input type: text
+    Plan: [] + 3 branches
+    Poll count: 14
+    Poll times: p50=3ms, p95=4ms
+    Final status: COMPLETED
+    Total time: 50ms
+    Resources: {'user_time_s': 0.35, 'system_time_s': 0.03, 'max_rss_mb': 92.9}
+    Output keys: ['summary', 'ner_result', 'sentiment_result']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_text_all_outputs
+  TIME: 2026-04-04 14:26:35
+  POST /api/v1/tasks
+    Body: input_data={"text": "Apple released a new product at their annual keynote event in Cupertino."}, outputs=['ner_result', 'sentiment_result', 'summary', 'iptc_tags', 'keywords']
+    Create: HTTP 201, 4ms
+    Task ID: d90ee783-7ce2-49eb-aada-814e777f8a1b
+    Input type: text
+    Plan: [] + 5 branches
+    Poll count: 14
+    Poll times: p50=3ms, p95=4ms
+    Final status: COMPLETED
+    Total time: 45ms
+    Resources: {'user_time_s': 0.36, 'system_time_s': 0.03, 'max_rss_mb': 92.9}
+    Output keys: ['summary', 'keywords', 'iptc_tags', 'ner_result', 'sentiment_result']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_file_to_ner
+  TIME: 2026-04-04 14:26:39
+  POST /api/v1/tasks
+    Body: input_data={"file_path": "/tmp/test.mp4"}, outputs=['ner_result']
+    Create: HTTP 201, 13ms
+    Task ID: 9a02a02d-fc74-4968-b0bc-169739394c56
+    Input type: audio_path
+    Plan: ['stt'] + 1 branches
+    Poll count: 8
+    Poll times: p50=2ms, p95=4ms
+    Final status: COMPLETED
+    Total time: 34ms
+    Resources: {'user_time_s': 0.37, 'system_time_s': 0.03, 'max_rss_mb': 92.9}
+    Output keys: ['ner_result']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_file_to_sentiment
+  TIME: 2026-04-04 14:26:43
+  POST /api/v1/tasks
+    Body: input_data={"file_path": "/tmp/test.mp4"}, outputs=['sentiment_result']
+    Create: HTTP 201, 12ms
+    Task ID: 21410bbd-a0f4-4f51-b332-2e8ed06e53e2
+    Input type: audio_path
+    Plan: ['stt'] + 1 branches
+    Poll count: 9
+    Poll times: p50=3ms, p95=4ms
+    Final status: COMPLETED
+    Total time: 38ms
+    Resources: {'user_time_s': 0.37, 'system_time_s': 0.03, 'max_rss_mb': 92.9}
+    Output keys: ['sentiment_result']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_file_to_summary
+  TIME: 2026-04-04 14:26:46
+  POST /api/v1/tasks
+    Body: input_data={"file_path": "/tmp/audio.wav"}, outputs=['summary']
+    Create: HTTP 201, 11ms
+    Task ID: b96d1b2a-5c83-4e7f-81d7-1b0a11eff218
+    Input type: audio_path
+    Plan: ['stt'] + 1 branches
+    Poll count: 5
+    Poll times: p50=3ms, p95=4ms
+    Final status: COMPLETED
+    Total time: 26ms
+    Resources: {'user_time_s': 0.38, 'system_time_s': 0.03, 'max_rss_mb': 92.9}
+    Output keys: ['summary']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_file_multi_output
+  TIME: 2026-04-04 14:26:51
+  POST /api/v1/tasks
+    Body: input_data={"file_path": "/tmp/test.mp4"}, outputs=['ner_result', 'summary', 'iptc_tags']
+    Create: HTTP 201, 5ms
+    Task ID: de92a135-96ae-4744-b5f8-639771c5b650
+    Input type: audio_path
+    Plan: ['stt'] + 3 branches
+    Poll count: 11
+    Poll times: p50=3ms, p95=4ms
+    Final status: COMPLETED
+    Total time: 38ms
+    Resources: {'user_time_s': 0.39, 'system_time_s': 0.03, 'max_rss_mb': 92.9}
+    Output keys: ['summary', 'iptc_tags', 'ner_result']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_youtube_to_ner
+  TIME: 2026-04-04 14:26:55
+  POST /api/v1/tasks
+    Body: input_data={"url": "https://youtube.com/watch?v=test123"}, outputs=['ner_result']
+    Create: HTTP 201, 5ms
+    Task ID: 56e6f89e-69f7-47e1-9d52-12c0759dca09
+    Input type: youtube_url
+    Plan: ['ytdlp_download', 'stt'] + 1 branches
+    Poll count: 8
+    Poll times: p50=3ms, p95=4ms
+    Final status: COMPLETED
+    Total time: 29ms
+    Resources: {'user_time_s': 0.39, 'system_time_s': 0.03, 'max_rss_mb': 92.9}
+    Output keys: ['ner_result']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_youtube_to_sentiment
+  TIME: 2026-04-04 14:26:59
+  POST /api/v1/tasks
+    Body: input_data={"url": "https://youtu.be/abc456"}, outputs=['sentiment_result']
+    Create: HTTP 201, 5ms
+    Task ID: 496be814-8193-4db2-bd95-67ad1fff6062
+    Input type: youtube_url
+    Plan: ['ytdlp_download', 'stt'] + 1 branches
+    Poll count: 8
+    Poll times: p50=3ms, p95=3ms
+    Final status: COMPLETED
+    Total time: 27ms
+    Resources: {'user_time_s': 0.4, 'system_time_s': 0.04, 'max_rss_mb': 92.9}
+    Output keys: ['sentiment_result']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_youtube_to_summary
+  TIME: 2026-04-04 14:27:01
+  POST /api/v1/tasks
+    Body: input_data={"url": "https://youtube.com/watch?v=test789"}, outputs=['summary']
+    Create: HTTP 201, 6ms
+    Task ID: fe6fc264-d4fa-4226-8c66-9f237db45965
+    Input type: youtube_url
+    Plan: ['ytdlp_download', 'stt'] + 1 branches
+    Poll count: 4
+    Poll times: p50=3ms, p95=3ms
+    Final status: COMPLETED
+    Total time: 17ms
+    Resources: {'user_time_s': 0.4, 'system_time_s': 0.04, 'max_rss_mb': 92.9}
+    Output keys: ['summary']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_youtube_multi_output
+  TIME: 2026-04-04 14:27:12
+  POST /api/v1/tasks
+    Body: input_data={"url": "https://youtube.com/watch?v=multi"}, outputs=['ner_result', 'sentiment_result', 'summary', 'keywords']
+    Create: HTTP 201, 6ms
+    Task ID: 8ab127cb-3bdd-46ff-81d9-50075a048897
+    Input type: youtube_url
+    Plan: ['ytdlp_download', 'stt'] + 4 branches
+    Poll count: 20
+    Poll times: p50=3ms, p95=4ms
+    Final status: COMPLETED
+    Total time: 65ms
+    Resources: {'user_time_s': 0.42, 'system_time_s': 0.04, 'max_rss_mb': 92.9}
+    Output keys: ['summary', 'keywords', 'ner_result', 'sentiment_result']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_text_with_type_hint
+  TIME: 2026-04-04 14:27:12
+  POST with input_type=text, input_data as string
+  HTTP 201, task_id=c887b9fa-78c6-4691-856f-24f4672c946b
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_youtube_with_type_hint
+  TIME: 2026-04-04 14:27:12
+  POST with input_type=youtube_link (hint), input_data as string URL
+  HTTP 201, detected input_type=youtube_url
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_list_all
+  TIME: 2026-04-04 14:27:12
+  GET /api/v1/tasks -> HTTP 200 (3ms)
+  Tasks returned: 17
+  has_more: False
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_list_with_filters
+  TIME: 2026-04-04 14:27:12
+  GET /api/v1/tasks?status=COMPLETED&limit=5 -> HTTP 200 (2ms)
+  Tasks: 5
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_create_and_delete
+  TIME: 2026-04-04 14:27:12
+  Created task abb362bb-9723-4dd3-8fe9-6afa9ee73d4b
+  DELETE -> HTTP 200 (4ms)
+  GET after delete -> HTTP 404 (404 expected)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_empty_body
+  TIME: 2026-04-04 14:27:12
+  POST empty body -> HTTP 400 (1ms)
+  Response: {'message': 'Validation failed', 'errors': ["'input_data' must be a non-empty JSON object"]}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_invalid_output_type
+  TIME: 2026-04-04 14:27:12
+  POST invalid output -> HTTP 400 (2ms)
+  Response: {'message': 'Validation failed', 'errors': ["Unknown output type(s): ['nonexistent_output']. Valid: ['iptc_tags', 'keywords', 'lang_meta', 'ner_result', 'sentiment_result', 'summary', 'text_en']"]}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_empty_outputs_list
+  TIME: 2026-04-04 14:27:12
+  POST empty outputs -> HTTP 400 (1ms)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_unclassifiable_input
+  TIME: 2026-04-04 14:27:12
+  POST unknown input_data fields -> HTTP 400 (1ms)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_nonexistent_task
+  TIME: 2026-04-04 14:27:12
+  GET nonexistent task -> HTTP 404 (2ms)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_delete_nonexistent
+  TIME: 2026-04-04 14:27:12
+  DELETE nonexistent task -> HTTP 404 (1ms)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_malformed_json
+  TIME: 2026-04-04 14:27:12
+  POST malformed JSON -> HTTP 400
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_template_injection
+  TIME: 2026-04-04 14:27:12
+  POST template injection -> HTTP 400 (1ms)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_jaeger_has_services
+  TIME: 2026-04-04 14:27:12
+  Services: ['ai-flow-orchestrator', 'jaeger-all-in-one']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_health
+  TIME: 2026-04-04 14:28:11
+  GET /api/health -> HTTP 200 (6ms)
+  Status: healthy
+  Checks: {
+  "postgres": {
+    "status": "ok",
+    "latency_ms": 0
+  },
+  "redis": {
+    "status": "ok",
+    "latency_ms": 1
+  },
+  "kafka": {
+    "status": "ok",
+    "latency_ms": 2
+  }
+}
+  Resources: {'user_time_s': 0.32, 'system_time_s': 0.02, 'max_rss_mb': 92.6}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_liveness
+  TIME: 2026-04-04 14:28:12
+  GET /api/liveness -> HTTP 200 (1ms)
+  Body: {'status': 'alive'}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_readiness
+  TIME: 2026-04-04 14:28:12
+  GET /api/readiness -> HTTP 200 (1ms)
+  Body: {'status': 'ready', 'checks': {'postgres': 'ok', 'kafka': 'ok'}}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_flow_catalogue
+  TIME: 2026-04-04 14:28:12
+  GET /api/v1/flows -> HTTP 200 (0ms)
+  Nodes: 9
+  Valid outputs: ['iptc_tags', 'keywords', 'lang_meta', 'ner_result', 'sentiment_result', 'summary', 'text_en']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_text_to_ner
+  TIME: 2026-04-04 14:28:14
+  POST /api/v1/tasks
+    Body: input_data={"text": "John Smith lives in Berlin and works at Acme Corp."}, outputs=['ner_result']
+    Create: HTTP 201, 7ms
+    Task ID: 8b1f9860-b761-46b8-92fc-a2fffe04e148
+    Input type: text
+    Plan: [] + 1 branches
+    Poll count: 5
+    Poll times: p50=3ms, p95=4ms
+    Final status: COMPLETED
+    Total time: 21ms
+    Resources: {'user_time_s': 0.33, 'system_time_s': 0.02, 'max_rss_mb': 92.6}
+    Output keys: ['ner_result']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_text_to_sentiment
+  TIME: 2026-04-04 14:28:17
+  POST /api/v1/tasks
+    Body: input_data={"text": "I absolutely love this product! It's amazing quality."}, outputs=['sentiment_result']
+    Create: HTTP 201, 7ms
+    Task ID: 06ade4ed-83b1-41dd-9bc0-5e645c5ccc95
+    Input type: text
+    Plan: [] + 1 branches
+    Poll count: 6
+    Poll times: p50=3ms, p95=3ms
+    Final status: COMPLETED
+    Total time: 24ms
+    Resources: {'user_time_s': 0.33, 'system_time_s': 0.02, 'max_rss_mb': 92.6}
+    Output keys: ['sentiment_result']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_text_to_summary
+  TIME: 2026-04-04 14:28:19
+  POST /api/v1/tasks
+    Body: input_data={"text": "Technology is transforming the global economy in unprecedented ways."}, outputs=['summary']
+    Create: HTTP 201, 6ms
+    Task ID: 18587b6c-9ed9-406f-8289-2b7bc748766c
+    Input type: text
+    Plan: [] + 1 branches
+    Poll count: 3
+    Poll times: p50=3ms, p95=4ms
+    Final status: COMPLETED
+    Total time: 16ms
+    Resources: {'user_time_s': 0.34, 'system_time_s': 0.02, 'max_rss_mb': 92.6}
+    Output keys: ['summary']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_text_to_iptc
+  TIME: 2026-04-04 14:28:20
+  POST /api/v1/tasks
+    Body: input_data={"text": "The government announced new economic policies for 2026."}, outputs=['iptc_tags']
+    Create: HTTP 201, 7ms
+    Task ID: 5de48c2a-81c2-410f-bcd6-4daee622a8d1
+    Input type: text
+    Plan: [] + 1 branches
+    Poll count: 3
+    Poll times: p50=3ms, p95=4ms
+    Final status: COMPLETED
+    Total time: 16ms
+    Resources: {'user_time_s': 0.34, 'system_time_s': 0.02, 'max_rss_mb': 92.6}
+    Output keys: ['iptc_tags']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_text_to_keywords
+  TIME: 2026-04-04 14:28:21
+  POST /api/v1/tasks
+    Body: input_data={"text": "Artificial intelligence is revolutionizing healthcare diagnostics."}, outputs=['keywords']
+    Create: HTTP 201, 6ms
+    Task ID: 25866343-67da-46a4-baf4-f60de95175c8
+    Input type: text
+    Plan: [] + 1 branches
+    Poll count: 2
+    Poll times: p50=2ms, p95=2ms
+    Final status: COMPLETED
+    Total time: 10ms
+    Resources: {'user_time_s': 0.34, 'system_time_s': 0.02, 'max_rss_mb': 92.6}
+    Output keys: ['keywords']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_text_multi_output
+  TIME: 2026-04-04 14:28:28
+  POST /api/v1/tasks
+    Body: input_data={"text": "Maria Garcia loves AI technology and works at Google."}, outputs=['ner_result', 'sentiment_result', 'summary']
+    Create: HTTP 201, 7ms
+    Task ID: 6e1fb996-8252-4bb4-bed5-2a5c0596f27f
+    Input type: text
+    Plan: [] + 3 branches
+    Poll count: 13
+    Poll times: p50=3ms, p95=4ms
+    Final status: COMPLETED
+    Total time: 45ms
+    Resources: {'user_time_s': 0.35, 'system_time_s': 0.02, 'max_rss_mb': 92.6}
+    Output keys: ['summary', 'ner_result', 'sentiment_result']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_text_all_outputs
+  TIME: 2026-04-04 14:28:37
+  POST /api/v1/tasks
+    Body: input_data={"text": "Apple released a new product at their annual keynote event in Cupertino."}, outputs=['ner_result', 'sentiment_result', 'summary', 'iptc_tags', 'keywords']
+    Create: HTTP 201, 6ms
+    Task ID: 0eeac9b1-42a2-42e6-9103-4175f4ca9fde
+    Input type: text
+    Plan: [] + 5 branches
+    Poll count: 18
+    Poll times: p50=3ms, p95=4ms
+    Final status: COMPLETED
+    Total time: 55ms
+    Resources: {'user_time_s': 0.37, 'system_time_s': 0.03, 'max_rss_mb': 92.6}
+    Output keys: ['summary', 'keywords', 'iptc_tags', 'ner_result', 'sentiment_result']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_file_to_ner
+  TIME: 2026-04-04 14:28:41
+  POST /api/v1/tasks
+    Body: input_data={"file_path": "/tmp/test.mp4"}, outputs=['ner_result']
+    Create: HTTP 201, 12ms
+    Task ID: db414798-fc6e-4efd-a605-23ac021e42f4
+    Input type: audio_path
+    Plan: ['stt'] + 1 branches
+    Poll count: 9
+    Poll times: p50=3ms, p95=4ms
+    Final status: COMPLETED
+    Total time: 37ms
+    Resources: {'user_time_s': 0.37, 'system_time_s': 0.03, 'max_rss_mb': 92.6}
+    Output keys: ['ner_result']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_file_to_sentiment
+  TIME: 2026-04-04 14:28:46
+  POST /api/v1/tasks
+    Body: input_data={"file_path": "/tmp/test.mp4"}, outputs=['sentiment_result']
+    Create: HTTP 201, 5ms
+    Task ID: cef1cfd9-63fb-40a2-99dd-328b2aaf5e72
+    Input type: audio_path
+    Plan: ['stt'] + 1 branches
+    Poll count: 10
+    Poll times: p50=3ms, p95=4ms
+    Final status: COMPLETED
+    Total time: 36ms
+    Resources: {'user_time_s': 0.38, 'system_time_s': 0.03, 'max_rss_mb': 92.6}
+    Output keys: ['sentiment_result']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_file_to_summary
+  TIME: 2026-04-04 14:28:48
+  POST /api/v1/tasks
+    Body: input_data={"file_path": "/tmp/audio.wav"}, outputs=['summary']
+    Create: HTTP 201, 11ms
+    Task ID: 3a1e0bb7-11d3-4852-96ea-079b1b59b406
+    Input type: audio_path
+    Plan: ['stt'] + 1 branches
+    Poll count: 3
+    Poll times: p50=2ms, p95=3ms
+    Final status: COMPLETED
+    Total time: 18ms
+    Resources: {'user_time_s': 0.38, 'system_time_s': 0.03, 'max_rss_mb': 92.6}
+    Output keys: ['summary']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_file_multi_output
+  TIME: 2026-04-04 14:28:54
+  POST /api/v1/tasks
+    Body: input_data={"file_path": "/tmp/test.mp4"}, outputs=['ner_result', 'summary', 'iptc_tags']
+    Create: HTTP 201, 6ms
+    Task ID: fba3a707-ccf4-46b2-a3b6-f690714e02a4
+    Input type: audio_path
+    Plan: ['stt'] + 3 branches
+    Poll count: 12
+    Poll times: p50=3ms, p95=4ms
+    Final status: COMPLETED
+    Total time: 41ms
+    Resources: {'user_time_s': 0.39, 'system_time_s': 0.03, 'max_rss_mb': 92.6}
+    Output keys: ['summary', 'iptc_tags', 'ner_result']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_youtube_to_ner
+  TIME: 2026-04-04 14:28:58
+  POST /api/v1/tasks
+    Body: input_data={"url": "https://youtube.com/watch?v=test123"}, outputs=['ner_result']
+    Create: HTTP 201, 6ms
+    Task ID: d54453f4-4a8a-4ad9-92f8-c4ae04a46caf
+    Input type: youtube_url
+    Plan: ['ytdlp_download', 'stt'] + 1 branches
+    Poll count: 8
+    Poll times: p50=3ms, p95=4ms
+    Final status: COMPLETED
+    Total time: 31ms
+    Resources: {'user_time_s': 0.4, 'system_time_s': 0.03, 'max_rss_mb': 92.6}
+    Output keys: ['ner_result']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_youtube_to_sentiment
+  TIME: 2026-04-04 14:29:01
+  POST /api/v1/tasks
+    Body: input_data={"url": "https://youtu.be/abc456"}, outputs=['sentiment_result']
+    Create: HTTP 201, 6ms
+    Task ID: 35d32ef4-76fd-4852-ac84-5f03a0e805ca
+    Input type: youtube_url
+    Plan: ['ytdlp_download', 'stt'] + 1 branches
+    Poll count: 7
+    Poll times: p50=3ms, p95=3ms
+    Final status: COMPLETED
+    Total time: 27ms
+    Resources: {'user_time_s': 0.41, 'system_time_s': 0.03, 'max_rss_mb': 92.6}
+    Output keys: ['sentiment_result']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_youtube_to_summary
+  TIME: 2026-04-04 14:29:03
+  POST /api/v1/tasks
+    Body: input_data={"url": "https://youtube.com/watch?v=test789"}, outputs=['summary']
+    Create: HTTP 201, 6ms
+    Task ID: 63ca59a9-8772-4fc1-880f-d7f92a886ad4
+    Input type: youtube_url
+    Plan: ['ytdlp_download', 'stt'] + 1 branches
+    Poll count: 4
+    Poll times: p50=3ms, p95=3ms
+    Final status: COMPLETED
+    Total time: 17ms
+    Resources: {'user_time_s': 0.41, 'system_time_s': 0.03, 'max_rss_mb': 92.6}
+    Output keys: ['summary']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_youtube_multi_output
+  TIME: 2026-04-04 14:29:13
+  POST /api/v1/tasks
+    Body: input_data={"url": "https://youtube.com/watch?v=multi"}, outputs=['ner_result', 'sentiment_result', 'summary', 'keywords']
+    Create: HTTP 201, 5ms
+    Task ID: 3d945c93-d23f-4536-9a5b-f59d10a1c065
+    Input type: youtube_url
+    Plan: ['ytdlp_download', 'stt'] + 4 branches
+    Poll count: 19
+    Poll times: p50=3ms, p95=4ms
+    Final status: COMPLETED
+    Total time: 62ms
+    Resources: {'user_time_s': 0.42, 'system_time_s': 0.04, 'max_rss_mb': 92.6}
+    Output keys: ['summary', 'keywords', 'ner_result', 'sentiment_result']
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_text_with_type_hint
+  TIME: 2026-04-04 14:29:13
+  POST with input_type=text, input_data as string
+  HTTP 201, task_id=59443cd7-f3ac-417f-933b-2532b6f1d9ec
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_youtube_with_type_hint
+  TIME: 2026-04-04 14:29:13
+  POST with input_type=youtube_link (hint), input_data as string URL
+  HTTP 201, detected input_type=youtube_url
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_list_all
+  TIME: 2026-04-04 14:29:13
+  GET /api/v1/tasks -> HTTP 200 (4ms)
+  Tasks returned: 17
+  has_more: False
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_list_with_filters
+  TIME: 2026-04-04 14:29:13
+  GET /api/v1/tasks?status=COMPLETED&limit=5 -> HTTP 200 (3ms)
+  Tasks: 5
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_create_and_delete
+  TIME: 2026-04-04 14:29:13
+  Created task 23feb390-2fb5-4031-a264-c4526ce3d47b
+  DELETE -> HTTP 200 (4ms)
+  GET after delete -> HTTP 404 (404 expected)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_empty_body
+  TIME: 2026-04-04 14:29:13
+  POST empty body -> HTTP 400 (1ms)
+  Response: {'message': 'Validation failed', 'errors': ["'input_data' must be a non-empty JSON object"]}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_invalid_output_type
+  TIME: 2026-04-04 14:29:13
+  POST invalid output -> HTTP 400 (1ms)
+  Response: {'message': 'Validation failed', 'errors': ["Unknown output type(s): ['nonexistent_output']. Valid: ['iptc_tags', 'keywords', 'lang_meta', 'ner_result', 'sentiment_result', 'summary', 'text_en']"]}
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_empty_outputs_list
+  TIME: 2026-04-04 14:29:13
+  POST empty outputs -> HTTP 400 (1ms)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_unclassifiable_input
+  TIME: 2026-04-04 14:29:13
+  POST unknown input_data fields -> HTTP 400 (1ms)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_nonexistent_task
+  TIME: 2026-04-04 14:29:13
+  GET nonexistent task -> HTTP 404 (3ms)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_delete_nonexistent
+  TIME: 2026-04-04 14:29:13
+  DELETE nonexistent task -> HTTP 404 (2ms)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_malformed_json
+  TIME: 2026-04-04 14:29:13
+  POST malformed JSON -> HTTP 400
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_template_injection
+  TIME: 2026-04-04 14:29:13
+  POST template injection -> HTTP 400 (1ms)
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_jaeger_has_services
+  TIME: 2026-04-04 14:29:13
+  Services: ['ai-flow-orchestrator', 'jaeger-all-in-one']
+  PASS
+======================================================================

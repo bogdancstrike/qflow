@@ -374,3 +374,278 @@
   Verified: OAM(42, None, 5) -> OffsetAndMetadata(offset=42, metadata=None, leader_epoch=5)
   PASS
 ======================================================================
+
+======================================================================
+  REGRESSION: test_endpoints_return_dicts_not_responses
+  TIME: 2026-04-04 14:16:20
+  Bug: jsonify() returns Flask Response, flask-restx tries to re-serialize it
+  Verified: no jsonify() calls in endpoints.py
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_offset_and_metadata_accepts_two_args
+  TIME: 2026-04-04 14:16:20
+  Bug: QF framework calls OffsetAndMetadata(offset, metadata) with 2 args
+  kafka-python 2.3.0 requires 3 args (offset, metadata, leader_epoch)
+  Fix: namedtuple with defaults=[0] for leader_epoch
+  Verified: OAM(42, None) -> OffsetAndMetadata(offset=42, metadata=None, leader_epoch=0)
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_offset_and_metadata_accepts_three_args
+  TIME: 2026-04-04 14:16:20
+  Verified: OAM(42, None, 5) -> OffsetAndMetadata(offset=42, metadata=None, leader_epoch=5)
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_task_to_dict_has_dag_fields
+  TIME: 2026-04-04 14:16:20
+  Verified: to_dict() includes outputs and execution_plan
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_task_to_dict_no_legacy_fields
+  TIME: 2026-04-04 14:16:20
+  Verified: legacy fields removed from to_dict()
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_flow_executor_missing_task_id
+  TIME: 2026-04-04 14:16:20
+  Sent message without task_id to flow_executor
+  Result: {'error': 'missing task_id'}
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_flow_executor_task_not_in_db
+  TIME: 2026-04-04 14:16:20
+  Sent nonexistent task_id to flow_executor
+  Result: {'error': 'task not found'}
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_endpoints_return_dicts_not_responses
+  TIME: 2026-04-04 14:17:23
+  Bug: jsonify() returns Flask Response, flask-restx tries to re-serialize it
+  Verified: no jsonify() calls in endpoints.py
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_offset_and_metadata_accepts_two_args
+  TIME: 2026-04-04 14:17:23
+  Bug: QF framework calls OffsetAndMetadata(offset, metadata) with 2 args
+  kafka-python 2.3.0 requires 3 args (offset, metadata, leader_epoch)
+  Fix: namedtuple with defaults=[0] for leader_epoch
+  Verified: OAM(42, None) -> OffsetAndMetadata(offset=42, metadata=None, leader_epoch=0)
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_offset_and_metadata_accepts_three_args
+  TIME: 2026-04-04 14:17:23
+  Verified: OAM(42, None, 5) -> OffsetAndMetadata(offset=42, metadata=None, leader_epoch=5)
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_task_to_dict_has_dag_fields
+  TIME: 2026-04-04 14:17:23
+  Verified: to_dict() includes outputs and execution_plan
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_task_to_dict_no_legacy_fields
+  TIME: 2026-04-04 14:17:23
+  Verified: legacy fields removed from to_dict()
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_flow_executor_missing_task_id
+  TIME: 2026-04-04 14:17:23
+  Sent message without task_id to flow_executor
+  Result: {'error': 'missing task_id'}
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_flow_executor_task_not_in_db
+  TIME: 2026-04-04 14:17:23
+  Sent nonexistent task_id to flow_executor
+  Result: {'error': 'task not found'}
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_endpoints_return_dicts_not_responses
+  TIME: 2026-04-04 14:17:48
+  Bug: jsonify() returns Flask Response, flask-restx tries to re-serialize it
+  Verified: no jsonify() calls in endpoints.py
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_offset_and_metadata_accepts_two_args
+  TIME: 2026-04-04 14:17:48
+  Bug: QF framework calls OffsetAndMetadata(offset, metadata) with 2 args
+  kafka-python 2.3.0 requires 3 args (offset, metadata, leader_epoch)
+  Fix: namedtuple with defaults=[0] for leader_epoch
+  Verified: OAM(42, None) -> OffsetAndMetadata(offset=42, metadata=None, leader_epoch=0)
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_offset_and_metadata_accepts_three_args
+  TIME: 2026-04-04 14:17:48
+  Verified: OAM(42, None, 5) -> OffsetAndMetadata(offset=42, metadata=None, leader_epoch=5)
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_task_to_dict_has_dag_fields
+  TIME: 2026-04-04 14:17:48
+  Verified: to_dict() includes outputs and execution_plan
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_task_to_dict_no_legacy_fields
+  TIME: 2026-04-04 14:17:48
+  Verified: legacy fields removed from to_dict()
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_flow_executor_missing_task_id
+  TIME: 2026-04-04 14:17:48
+  Sent message without task_id to flow_executor
+  Result: {'error': 'missing task_id'}
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_flow_executor_task_not_in_db
+  TIME: 2026-04-04 14:17:48
+  Sent nonexistent task_id to flow_executor
+  Result: {'error': 'task not found'}
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_endpoints_return_dicts_not_responses
+  TIME: 2026-04-04 14:29:49
+  Bug: jsonify() returns Flask Response, flask-restx tries to re-serialize it
+  Verified: no jsonify() calls in endpoints.py
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_offset_and_metadata_accepts_two_args
+  TIME: 2026-04-04 14:29:49
+  Bug: QF framework calls OffsetAndMetadata(offset, metadata) with 2 args
+  kafka-python 2.3.0 requires 3 args (offset, metadata, leader_epoch)
+  Fix: namedtuple with defaults=[0] for leader_epoch
+  Verified: OAM(42, None) -> OffsetAndMetadata(offset=42, metadata=None, leader_epoch=0)
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_offset_and_metadata_accepts_three_args
+  TIME: 2026-04-04 14:29:49
+  Verified: OAM(42, None, 5) -> OffsetAndMetadata(offset=42, metadata=None, leader_epoch=5)
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_task_to_dict_has_dag_fields
+  TIME: 2026-04-04 14:29:49
+  Verified: to_dict() includes outputs and execution_plan
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_task_to_dict_no_legacy_fields
+  TIME: 2026-04-04 14:29:49
+  Verified: legacy fields removed from to_dict()
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_flow_executor_missing_task_id
+  TIME: 2026-04-04 14:29:49
+  Sent message without task_id to flow_executor
+  Result: {'error': 'missing task_id'}
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_flow_executor_task_not_in_db
+  TIME: 2026-04-04 14:29:49
+  Sent nonexistent task_id to flow_executor
+  Result: {'error': 'task not found'}
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_endpoints_return_dicts_not_responses
+  TIME: 2026-04-04 14:31:38
+  Bug: jsonify() returns Flask Response, flask-restx tries to re-serialize it
+  Verified: no jsonify() calls in endpoints.py
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_offset_and_metadata_accepts_two_args
+  TIME: 2026-04-04 14:31:38
+  Bug: QF framework calls OffsetAndMetadata(offset, metadata) with 2 args
+  kafka-python 2.3.0 requires 3 args (offset, metadata, leader_epoch)
+  Fix: namedtuple with defaults=[0] for leader_epoch
+  Verified: OAM(42, None) -> OffsetAndMetadata(offset=42, metadata=None, leader_epoch=0)
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_offset_and_metadata_accepts_three_args
+  TIME: 2026-04-04 14:31:38
+  Verified: OAM(42, None, 5) -> OffsetAndMetadata(offset=42, metadata=None, leader_epoch=5)
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_task_to_dict_has_dag_fields
+  TIME: 2026-04-04 14:31:38
+  Verified: to_dict() includes outputs and execution_plan
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_task_to_dict_no_legacy_fields
+  TIME: 2026-04-04 14:31:38
+  Verified: legacy fields removed from to_dict()
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_flow_executor_missing_task_id
+  TIME: 2026-04-04 14:31:38
+  Sent message without task_id to flow_executor
+  Result: {'error': 'missing task_id'}
+  PASS
+======================================================================
+
+======================================================================
+  REGRESSION: test_flow_executor_task_not_in_db
+  TIME: 2026-04-04 14:31:38
+  Sent nonexistent task_id to flow_executor
+  Result: {'error': 'task not found'}
+  PASS
+======================================================================

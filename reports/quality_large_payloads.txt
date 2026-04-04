@@ -180,3 +180,81 @@
   Errors: []
   PASS
 ======================================================================
+
+======================================================================
+  TEST: test_100mb_text_validation
+  TIME: 2026-04-04 14:23:45
+  Payload size: 100MB
+  Validation time: 0.00s
+  Errors: ["'input_data' must be a non-empty JSON object"]
+  PASS (no crash, no OOM)
+======================================================================
+
+======================================================================
+  TEST: test_large_json_object_validation
+  TIME: 2026-04-04 14:23:45
+  Keys: 10000, approx size: ~96727KB
+  Validation time: 0.00s
+  Errors: []
+  PASS (no crash)
+======================================================================
+
+======================================================================
+  TEST: test_simulated_large_file_upload
+  TIME: 2026-04-04 14:23:45
+  File size: 10MB at /tmp/tmp8d19n30d.mp4
+  Errors: ["Unknown output type(s): ['stt_result']. Valid: ['iptc_tags', 'keywords', 'lang_meta', 'ner_result', 'sentiment_result', 'summary', 'text_en']"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_100mb_text_validation
+  TIME: 2026-04-04 14:29:37
+  Payload size: 100MB
+  Validation time: 0.00s
+  Errors: ["'input_data' must be a non-empty JSON object"]
+  PASS (no crash, no OOM)
+======================================================================
+
+======================================================================
+  TEST: test_large_json_object_validation
+  TIME: 2026-04-04 14:29:37
+  Keys: 10000, approx size: ~96727KB
+  Validation time: 0.00s
+  Errors: []
+  PASS (no crash)
+======================================================================
+
+======================================================================
+  TEST: test_simulated_large_file_upload
+  TIME: 2026-04-04 14:29:37
+  File size: 10MB at /tmp/tmpd82lhd3g.mp4
+  Errors: ["Unknown output type(s): ['stt_result']. Valid: ['iptc_tags', 'keywords', 'lang_meta', 'ner_result', 'sentiment_result', 'summary', 'text_en']"]
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_100mb_text_validation
+  TIME: 2026-04-04 14:31:27
+  Payload size: 100MB
+  Validation time: 0.00s
+  Errors: ["'input_data' must be a non-empty JSON object"]
+  PASS (no crash, no OOM)
+======================================================================
+
+======================================================================
+  TEST: test_large_json_object_validation
+  TIME: 2026-04-04 14:31:27
+  Keys: 10000, approx size: ~96727KB
+  Validation time: 0.00s
+  Errors: []
+  PASS (no crash)
+======================================================================
+
+======================================================================
+  TEST: test_simulated_large_file_upload
+  TIME: 2026-04-04 14:31:27
+  File size: 10MB at /tmp/tmpae6me4jt.mp4
+  Errors: ["Unknown output type(s): ['stt_result']. Valid: ['iptc_tags', 'keywords', 'lang_meta', 'ner_result', 'sentiment_result', 'summary', 'text_en']"]
+  PASS
+======================================================================

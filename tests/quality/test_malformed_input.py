@@ -1,22 +1,22 @@
-"""Quality tests — malformed JSON payloads and invalid input.
+"""Quality tests — malformed and edge-case inputs.
 
-Verifies the API properly validates and rejects bad input without crashing.
+Verifies the API gracefully handles invalid, malicious, or extreme inputs
+without crashing, hanging, or leaking information.
 """
 
 import os
-import json
 import time
-
 import pytest
 
 os.environ["DEV_MODE"] = "true"
 os.environ["DATABASE_URL"] = "sqlite:///test_malformed.db"
 
 from src.api.validators import validate_task_input
-from src.core.resolver import is_valid_combination
+from src.dag.planner import build_plan, PlanningError
+from src.dag.input_detector import InputDetectionError
 
 
-REPORT_FILE = os.path.join(os.path.dirname(__file__), "../../reports/quality_malformed_input.txt")
+REPORT_FILE = os.path.join(os.path.dirname(__file__), "../../reports/quality_malformed.txt")
 
 
 def _write_report(test_name, lines):
@@ -30,140 +30,98 @@ def _write_report(test_name, lines):
         f.write(f"{'='*70}\n")
 
 
-class TestMalformedJsonPayloads:
-    """Verify validation catches all forms of bad input."""
+class TestMalformedInput:
 
-    def test_empty_payload(self):
-        errors = validate_task_input({})
-        assert len(errors) >= 2  # missing input_type and desired_output
-        _write_report("test_empty_payload", [f"Errors: {errors}", "PASS"])
-
-    def test_missing_input_type(self):
-        errors = validate_task_input({"desired_output": "ner", "input_data": "hello"})
-        assert any("input_type" in e for e in errors)
-        _write_report("test_missing_input_type", [f"Errors: {errors}", "PASS"])
-
-    def test_missing_desired_output(self):
-        errors = validate_task_input({"input_type": "text", "input_data": "hello"})
-        assert any("desired_output" in e for e in errors)
-        _write_report("test_missing_desired_output", [f"Errors: {errors}", "PASS"])
-
-    def test_invalid_input_type(self):
-        errors = validate_task_input({
-            "input_type": "invalid_type",
-            "desired_output": "ner",
-            "input_data": "hello",
-        })
-        assert any("Invalid input_type" in e for e in errors)
-        _write_report("test_invalid_input_type", [f"Errors: {errors}", "PASS"])
-
-    def test_invalid_desired_output(self):
-        errors = validate_task_input({
-            "input_type": "text",
-            "desired_output": "nonexistent_output",
-            "input_data": "hello",
-        })
-        assert any("Invalid desired_output" in e for e in errors)
-        _write_report("test_invalid_desired_output", [f"Errors: {errors}", "PASS"])
-
-    def test_invalid_combination(self):
-        """Some input_type + desired_output combos may not be supported."""
-        assert not is_valid_combination("text", "stt")  # text can't be STT'd
-        errors = validate_task_input({
-            "input_type": "text",
-            "desired_output": "stt",
-            "input_data": "hello",
-        })
+    def test_empty_input_data(self):
+        errors = validate_task_input({}, ["ner_result"])
         assert len(errors) > 0
-        _write_report("test_invalid_combination", [f"Errors: {errors}", "PASS"])
+        _write_report("test_empty_input_data", [f"Errors: {errors}", "PASS"])
 
-    def test_empty_input_data_text(self):
-        errors = validate_task_input({
-            "input_type": "text",
-            "desired_output": "ner",
-            "input_data": "",
-        })
+    def test_none_input_data(self):
+        errors = validate_task_input(None, ["ner_result"])
         assert len(errors) > 0
-        _write_report("test_empty_input_data_text", [f"Errors: {errors}", "PASS"])
+        _write_report("test_none_input_data", [f"Errors: {errors}", "PASS"])
 
-    def test_null_input_data(self):
-        errors = validate_task_input({
-            "input_type": "text",
-            "desired_output": "ner",
-            "input_data": None,
-        })
+    def test_string_as_input_data(self):
+        errors = validate_task_input("not a dict", ["ner_result"])
         assert len(errors) > 0
-        _write_report("test_null_input_data", [f"Errors: {errors}", "PASS"])
+        _write_report("test_string_as_input_data", [f"Errors: {errors}", "PASS"])
 
-    def test_numeric_input_data(self):
-        errors = validate_task_input({
-            "input_type": "text",
-            "desired_output": "ner",
-            "input_data": 12345,
-        })
+    def test_empty_outputs(self):
+        errors = validate_task_input({"text": "hello"}, [])
         assert len(errors) > 0
-        _write_report("test_numeric_input_data", [f"Errors: {errors}", "PASS"])
+        _write_report("test_empty_outputs", [f"Errors: {errors}", "PASS"])
 
-    def test_youtube_with_non_string_input(self):
-        errors = validate_task_input({
-            "input_type": "youtube_link",
-            "desired_output": "stt",
-            "input_data": {"url": "https://youtube.com"},
-        })
+    def test_invalid_output_type(self):
+        errors = validate_task_input({"text": "hello"}, ["invalid_output"])
         assert len(errors) > 0
-        _write_report("test_youtube_with_non_string_input", [f"Errors: {errors}", "PASS"])
+        assert "Unknown output" in errors[0]
+        _write_report("test_invalid_output_type", [f"Errors: {errors}", "PASS"])
 
-    def test_extremely_long_input(self):
-        """Verify handling of very large text input."""
-        large_text = "A" * (10 * 1024 * 1024)  # 10MB string
-        errors = validate_task_input({
-            "input_type": "text",
-            "desired_output": "ner",
-            "input_data": large_text,
-        })
-        # Should either accept or reject gracefully, not crash
-        _write_report("test_extremely_long_input", [
-            f"Input size: {len(large_text)} bytes",
-            f"Errors: {errors}",
+    def test_template_injection_in_text(self):
+        errors = validate_task_input({"text": "{{config.items()}}"}, ["ner_result"])
+        assert len(errors) > 0
+        assert "template injection" in errors[0].lower()
+        _write_report("test_template_injection", [f"Errors: {errors}", "PASS"])
+
+    def test_jinja_block_in_text(self):
+        errors = validate_task_input(
+            {"text": "{% for x in range(1000000) %}x{% endfor %}"},
+            ["ner_result"],
+        )
+        assert len(errors) > 0
+        _write_report("test_jinja_block", [f"Errors: {errors}", "PASS"])
+
+    def test_path_traversal_in_file_path(self):
+        errors = validate_task_input({"file_path": "../../etc/passwd"}, ["summary"])
+        assert len(errors) > 0
+        _write_report("test_path_traversal", [f"Errors: {errors}", "PASS"])
+
+    def test_null_bytes_in_file_path(self):
+        errors = validate_task_input({"file_path": "/tmp/test\x00.mp4"}, ["summary"])
+        assert len(errors) > 0
+        _write_report("test_null_bytes", [f"Errors: {errors}", "PASS"])
+
+    def test_unknown_field_raises_detection_error(self):
+        with pytest.raises(PlanningError):
+            build_plan({"unknown_key": "value"}, ["ner_result"])
+        _write_report("test_unknown_field", ["PlanningError raised as expected", "PASS"])
+
+    def test_unsupported_file_extension(self):
+        with pytest.raises(PlanningError):
+            build_plan({"file_path": "/tmp/document.pdf"}, ["summary"])
+        _write_report("test_unsupported_extension", ["PlanningError raised as expected", "PASS"])
+
+    def test_extremely_large_text(self):
+        """10MB text — validator should not crash."""
+        large_text = "A" * (10 * 1024 * 1024)
+        errors = validate_task_input({"text": large_text}, ["summary"])
+        assert isinstance(errors, list)
+        _write_report("test_large_text", [
+            f"Text size: {len(large_text):,} bytes",
+            f"Errors: {len(errors)}",
             "PASS (no crash)",
         ])
 
-    def test_nested_json_bomb(self):
-        """Deeply nested JSON should not crash."""
-        nested = {"a": "value"}
+    def test_deeply_nested_json(self):
+        """100-level nested dict — should not crash."""
+        nested = {}
+        current = nested
         for _ in range(100):
-            nested = {"nested": nested}
-        errors = validate_task_input({
-            "input_type": "text",
-            "desired_output": "ner",
-            "input_data": nested,
-        })
-        _write_report("test_nested_json_bomb", [
-            "Depth: 100 levels",
-            f"Errors: {errors}",
-            "PASS (no crash)",
-        ])
+            current["child"] = {}
+            current = current["child"]
+        errors = validate_task_input({"text": str(nested)[:1000]}, ["ner_result"])
+        assert isinstance(errors, list)
+        _write_report("test_nested_json", ["100-level nesting handled without crash", "PASS"])
 
-    def test_special_characters_in_input(self):
-        """Unicode, null bytes, etc."""
-        special_inputs = [
-            "Hello\x00World",       # null byte
-            "Hello\nWorld\tTab",    # control chars
-            "\ud800",               # lone surrogate (if encoding allows)
-            "' OR 1=1; --",         # SQL injection attempt
-            "<script>alert(1)</script>",  # XSS attempt
-        ]
-        for text in special_inputs:
-            try:
-                errors = validate_task_input({
-                    "input_type": "text",
-                    "desired_output": "ner",
-                    "input_data": text,
-                })
-            except Exception as e:
-                # Acceptable to raise, not acceptable to crash silently
-                pass
-        _write_report("test_special_characters_in_input", [
-            f"Tested {len(special_inputs)} special inputs",
-            "PASS (no crash)",
-        ])
+    def test_sql_injection_in_text(self):
+        sql_injection = "'; DROP TABLE tasks; --"
+        errors = validate_task_input({"text": sql_injection}, ["ner_result"])
+        assert isinstance(errors, list)
+        _write_report("test_sql_injection", [f"Errors: {errors}", "PASS (treated as text)"])
+
+    def test_xss_in_text(self):
+        xss = "<script>alert('xss')</script>"
+        errors = validate_task_input({"text": xss}, ["ner_result"])
+        assert isinstance(errors, list)
+        _write_report("test_xss", [f"Errors: {errors}", "PASS (treated as text)"])

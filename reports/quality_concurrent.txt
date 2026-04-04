@@ -93,3 +93,87 @@
   Failures: 0
   Elapsed: 5.58s
 ======================================================================
+
+======================================================================
+  TEST: test_10_parallel_text_ner_tasks
+  TIME: 2026-04-04 14:22:34
+  Parallel tasks: 10
+  Successes: 10
+  Failures: 0
+  Elapsed: 4.31s
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_mixed_parallel_tasks
+  TIME: 2026-04-04 14:22:38
+  Mixed parallel tasks: 6
+  Types: [('text', 'ner_result'), ('text', 'sentiment_result'), ('text', 'summary'), ('file_path', 'summary'), ('file_path', 'ner_result'), ('url', 'sentiment_result')]
+  Successes: 6
+  Failures: 0
+  Elapsed: 4.08s
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_10_parallel_text_ner_tasks
+  TIME: 2026-04-04 14:23:41
+  Parallel tasks: 10
+  Successes: 10
+  Failures: 0
+  Elapsed: 3.50s
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_mixed_parallel_tasks
+  TIME: 2026-04-04 14:23:45
+  Mixed parallel tasks: 6
+  Types: [('text', 'ner_result'), ('text', 'sentiment_result'), ('text', 'summary'), ('file_path', 'summary'), ('file_path', 'ner_result'), ('url', 'sentiment_result')]
+  Successes: 6
+  Failures: 0
+  Elapsed: 4.32s
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_10_parallel_text_ner_tasks
+  TIME: 2026-04-04 14:29:33
+  Parallel tasks: 10
+  Successes: 10
+  Failures: 0
+  Elapsed: 4.09s
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_mixed_parallel_tasks
+  TIME: 2026-04-04 14:29:37
+  Mixed parallel tasks: 6
+  Types: [('text', 'ner_result'), ('text', 'sentiment_result'), ('text', 'summary'), ('file_path', 'summary'), ('file_path', 'ner_result'), ('url', 'sentiment_result')]
+  Successes: 6
+  Failures: 0
+  Elapsed: 3.54s
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_10_parallel_text_ner_tasks
+  TIME: 2026-04-04 14:31:22
+  Parallel tasks: 10
+  Successes: 10
+  Failures: 0
+  Elapsed: 3.15s
+  PASS
+======================================================================
+
+======================================================================
+  TEST: test_mixed_parallel_tasks
+  TIME: 2026-04-04 14:31:27
+  Mixed parallel tasks: 6
+  Types: [('text', 'ner_result'), ('text', 'sentiment_result'), ('text', 'summary'), ('file_path', 'summary'), ('file_path', 'ner_result'), ('url', 'sentiment_result')]
+  Successes: 6
+  Failures: 0
+  Elapsed: 4.82s
+  PASS
+======================================================================

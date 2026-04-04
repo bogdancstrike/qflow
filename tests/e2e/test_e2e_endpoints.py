@@ -2,6 +2,7 @@
 
 Requires: docker compose up + python main.py running.
 Connects to http://localhost:5000 and tests all API endpoints.
+Tests ALL possible DAG flows: text, file, youtube, multi-output.
 
 Run:
     python -m pytest tests/e2e/test_e2e_endpoints.py -v --tb=short
@@ -13,6 +14,7 @@ import os
 import json
 import time
 import uuid
+import statistics
 import resource
 
 import pytest
@@ -21,7 +23,6 @@ import requests
 API_URL = os.getenv("API_URL", "http://localhost:5000")
 REPORT_FILE = os.path.join(os.path.dirname(__file__), "../../reports/e2e_endpoints.txt")
 
-# API paths (v1 versioned)
 TASKS_URL = "/api/v1/tasks"
 FLOWS_URL = "/api/v1/flows"
 HEALTH_URL = "/api/health"
@@ -30,14 +31,16 @@ READINESS_URL = "/api/readiness"
 
 
 def _api(method, path, **kwargs):
-    """Make an API request and return (status_code, body_dict)."""
+    """Make an API request. Returns (status_code, body_dict, elapsed_ms)."""
     url = f"{API_URL}{path}"
+    start = time.time()
     resp = requests.request(method, url, timeout=30, **kwargs)
+    elapsed_ms = int((time.time() - start) * 1000)
     try:
         body = resp.json()
     except Exception:
         body = {"raw": resp.text}
-    return resp.status_code, body
+    return resp.status_code, body, elapsed_ms
 
 
 def _write_report(test_name, lines):
@@ -52,7 +55,6 @@ def _write_report(test_name, lines):
 
 
 def _resource_usage():
-    """Get current process resource usage."""
     ru = resource.getrusage(resource.RUSAGE_SELF)
     return {
         "user_time_s": round(ru.ru_utime, 2),
@@ -61,9 +63,66 @@ def _resource_usage():
     }
 
 
+def _poll_task(task_id, max_polls=60):
+    """Poll a task until it completes. Returns (status, task_body, poll_times_ms)."""
+    poll_times = []
+    task_body = None
+    status = "PENDING"
+    for _ in range(max_polls):
+        time.sleep(0.5)
+        code, task_body, elapsed = _api("GET", f"{TASKS_URL}/{task_id}")
+        poll_times.append(elapsed)
+        assert code == 200
+        status = task_body["status"]
+        if status in ("COMPLETED", "FAILED", "TERMINATED"):
+            break
+    return status, task_body, poll_times
+
+
+def _create_and_poll(input_data, outputs, test_name):
+    """Create a task and poll for completion. Returns (task_body, durations)."""
+    create_code, create_body, create_ms = _api("POST", TASKS_URL, json={
+        "input_data": input_data,
+        "outputs": outputs,
+    })
+    assert create_code == 201, f"Expected 201, got {create_code}: {create_body}"
+
+    task_id = create_body["id"]
+    assert create_body["status"] == "PENDING"
+
+    status, task_body, poll_times = _poll_task(task_id)
+    total_ms = create_ms + sum(poll_times)
+
+    report_lines = [
+        f"POST {TASKS_URL}",
+        f"  Body: input_data={json.dumps(input_data)[:100]}, outputs={outputs}",
+        f"  Create: HTTP 201, {create_ms}ms",
+        f"  Task ID: {task_id}",
+        f"  Input type: {create_body.get('input_type')}",
+        f"  Plan: {create_body.get('execution_plan', {}).get('ingest_steps', [])} + "
+        f"{len(create_body.get('execution_plan', {}).get('branches', []))} branches",
+        f"  Poll count: {len(poll_times)}",
+        f"  Poll times: p50={int(statistics.median(poll_times))}ms, "
+        f"p95={int(sorted(poll_times)[int(len(poll_times)*0.95)])if poll_times else 0}ms",
+        f"  Final status: {status}",
+        f"  Total time: {total_ms}ms",
+        f"  Resources: {_resource_usage()}",
+    ]
+
+    if status == "COMPLETED":
+        final_output = task_body.get("final_output", {})
+        report_lines.append(f"  Output keys: {list(final_output.keys())}")
+        report_lines.append("PASS")
+    else:
+        report_lines.append(f"  Error: {task_body.get('error')}")
+        report_lines.append("FAIL")
+
+    _write_report(test_name, report_lines)
+    return task_body, {"create_ms": create_ms, "poll_times": poll_times, "total_ms": total_ms}
+
+
 @pytest.fixture(scope="module", autouse=True)
 def check_api_reachable():
-    """Skip all tests if the API is not running."""
     try:
         requests.get(f"{API_URL}{HEALTH_URL}", timeout=5)
     except Exception:
@@ -72,7 +131,6 @@ def check_api_reachable():
 
 @pytest.fixture(scope="module")
 def created_task_ids():
-    """Collect task IDs created during tests for cleanup."""
     ids = []
     yield ids
     for tid in ids:
@@ -82,187 +140,389 @@ def created_task_ids():
             pass
 
 
+# ============================================================
+# System/Health endpoints
+# ============================================================
+
 class TestHealthAndMeta:
-    """Health check, liveness, readiness, and metadata endpoints."""
 
     def test_health(self):
-        code, body = _api("GET", HEALTH_URL)
+        code, body, ms = _api("GET", HEALTH_URL)
         assert code == 200
         assert body["status"] in ("healthy", "degraded")
         assert "checks" in body
         _write_report("test_health", [
-            f"Status: {code}",
-            f"Body: {json.dumps(body, indent=2)}",
+            f"GET {HEALTH_URL} -> HTTP {code} ({ms}ms)",
+            f"Status: {body['status']}",
+            f"Checks: {json.dumps(body.get('checks', {}), indent=2)}",
             f"Resources: {_resource_usage()}",
             "PASS",
         ])
 
     def test_liveness(self):
-        code, body = _api("GET", LIVENESS_URL)
+        code, body, ms = _api("GET", LIVENESS_URL)
         assert code == 200
         assert body["status"] == "alive"
-        _write_report("test_liveness", [f"Status: {code}", f"Body: {body}", "PASS"])
+        _write_report("test_liveness", [
+            f"GET {LIVENESS_URL} -> HTTP {code} ({ms}ms)",
+            f"Body: {body}",
+            "PASS",
+        ])
 
     def test_readiness(self):
-        code, body = _api("GET", READINESS_URL)
+        code, body, ms = _api("GET", READINESS_URL)
         assert code in (200, 503)
         assert "checks" in body
-        _write_report("test_readiness", [f"Status: {code}", f"Body: {body}", "PASS"])
+        _write_report("test_readiness", [
+            f"GET {READINESS_URL} -> HTTP {code} ({ms}ms)",
+            f"Body: {body}",
+            "PASS",
+        ])
 
     def test_flow_catalogue(self):
-        code, body = _api("GET", FLOWS_URL)
+        code, body, ms = _api("GET", FLOWS_URL)
         assert code == 200
         assert body["count"] > 0
+        assert len(body["valid_outputs"]) > 0
         _write_report("test_flow_catalogue", [
-            f"Count: {body['count']}",
-            f"Valid outputs: {body.get('valid_outputs', [])}",
+            f"GET {FLOWS_URL} -> HTTP {code} ({ms}ms)",
+            f"Nodes: {body['count']}",
+            f"Valid outputs: {body['valid_outputs']}",
             "PASS",
         ])
 
 
-class TestTaskCreation:
-    """Valid task creation and polling."""
+# ============================================================
+# Text input -> all outputs
+# ============================================================
 
-    @pytest.mark.parametrize("input_type,input_data,desired_output,expect_field", [
-        ("text", "John Smith lives in Berlin.", "ner", "entities"),
-        ("text", "I love this product!", "sentiment", "sentiment"),
-        ("text", "A long article about tech.", "summary", "summary"),
-        ("file_upload", {"file_path": "/tmp/test.mp4"}, "stt", "text"),
-        ("youtube_link", "https://youtube.com/watch?v=test", "stt", "text"),
-    ])
-    def test_create_and_poll(self, input_type, input_data, desired_output,
-                             expect_field, created_task_ids):
-        start = time.time()
+class TestTextFlows:
 
-        # Create via legacy mode
-        code, body = _api("POST", TASKS_URL, json={
-            "input_type": input_type,
-            "input_data": input_data,
-            "desired_output": desired_output,
+    def test_text_to_ner(self, created_task_ids):
+        task_body, durations = _create_and_poll(
+            {"text": "John Smith lives in Berlin and works at Acme Corp."},
+            ["ner_result"],
+            "test_text_to_ner",
+        )
+        created_task_ids.append(task_body["id"])
+        assert task_body["status"] == "COMPLETED"
+        assert "ner_result" in task_body["final_output"]
+        assert "entities" in task_body["final_output"]["ner_result"]
+
+    def test_text_to_sentiment(self, created_task_ids):
+        task_body, durations = _create_and_poll(
+            {"text": "I absolutely love this product! It's amazing quality."},
+            ["sentiment_result"],
+            "test_text_to_sentiment",
+        )
+        created_task_ids.append(task_body["id"])
+        assert task_body["status"] == "COMPLETED"
+        assert "sentiment_result" in task_body["final_output"]
+
+    def test_text_to_summary(self, created_task_ids):
+        task_body, durations = _create_and_poll(
+            {"text": "Technology is transforming the global economy in unprecedented ways."},
+            ["summary"],
+            "test_text_to_summary",
+        )
+        created_task_ids.append(task_body["id"])
+        assert task_body["status"] == "COMPLETED"
+        assert "summary" in task_body["final_output"]
+
+    def test_text_to_iptc(self, created_task_ids):
+        task_body, durations = _create_and_poll(
+            {"text": "The government announced new economic policies for 2026."},
+            ["iptc_tags"],
+            "test_text_to_iptc",
+        )
+        created_task_ids.append(task_body["id"])
+        assert task_body["status"] == "COMPLETED"
+        assert "iptc_tags" in task_body["final_output"]
+
+    def test_text_to_keywords(self, created_task_ids):
+        task_body, durations = _create_and_poll(
+            {"text": "Artificial intelligence is revolutionizing healthcare diagnostics."},
+            ["keywords"],
+            "test_text_to_keywords",
+        )
+        created_task_ids.append(task_body["id"])
+        assert task_body["status"] == "COMPLETED"
+        assert "keywords" in task_body["final_output"]
+
+    def test_text_multi_output(self, created_task_ids):
+        """NER + Sentiment + Summary in parallel branches."""
+        task_body, durations = _create_and_poll(
+            {"text": "Maria Garcia loves AI technology and works at Google."},
+            ["ner_result", "sentiment_result", "summary"],
+            "test_text_multi_output",
+        )
+        created_task_ids.append(task_body["id"])
+        assert task_body["status"] == "COMPLETED"
+        final = task_body["final_output"]
+        assert "ner_result" in final
+        assert "sentiment_result" in final
+        assert "summary" in final
+
+    def test_text_all_outputs(self, created_task_ids):
+        """All 5 main outputs simultaneously."""
+        task_body, durations = _create_and_poll(
+            {"text": "Apple released a new product at their annual keynote event in Cupertino."},
+            ["ner_result", "sentiment_result", "summary", "iptc_tags", "keywords"],
+            "test_text_all_outputs",
+        )
+        created_task_ids.append(task_body["id"])
+        assert task_body["status"] == "COMPLETED"
+        assert len(task_body["final_output"]) == 5
+
+
+# ============================================================
+# File upload -> all outputs
+# ============================================================
+
+class TestFileFlows:
+
+    def test_file_to_ner(self, created_task_ids):
+        task_body, durations = _create_and_poll(
+            {"file_path": "/tmp/test.mp4"},
+            ["ner_result"],
+            "test_file_to_ner",
+        )
+        created_task_ids.append(task_body["id"])
+        assert task_body["status"] == "COMPLETED"
+        assert "ner_result" in task_body["final_output"]
+
+    def test_file_to_sentiment(self, created_task_ids):
+        task_body, durations = _create_and_poll(
+            {"file_path": "/tmp/test.mp4"},
+            ["sentiment_result"],
+            "test_file_to_sentiment",
+        )
+        created_task_ids.append(task_body["id"])
+        assert task_body["status"] == "COMPLETED"
+
+    def test_file_to_summary(self, created_task_ids):
+        task_body, durations = _create_and_poll(
+            {"file_path": "/tmp/audio.wav"},
+            ["summary"],
+            "test_file_to_summary",
+        )
+        created_task_ids.append(task_body["id"])
+        assert task_body["status"] == "COMPLETED"
+
+    def test_file_multi_output(self, created_task_ids):
+        task_body, durations = _create_and_poll(
+            {"file_path": "/tmp/test.mp4"},
+            ["ner_result", "summary", "iptc_tags"],
+            "test_file_multi_output",
+        )
+        created_task_ids.append(task_body["id"])
+        assert task_body["status"] == "COMPLETED"
+        assert len(task_body["final_output"]) == 3
+
+
+# ============================================================
+# YouTube -> all outputs
+# ============================================================
+
+class TestYouTubeFlows:
+
+    def test_youtube_to_ner(self, created_task_ids):
+        task_body, durations = _create_and_poll(
+            {"url": "https://youtube.com/watch?v=test123"},
+            ["ner_result"],
+            "test_youtube_to_ner",
+        )
+        created_task_ids.append(task_body["id"])
+        assert task_body["status"] == "COMPLETED"
+        assert "ner_result" in task_body["final_output"]
+
+    def test_youtube_to_sentiment(self, created_task_ids):
+        task_body, durations = _create_and_poll(
+            {"url": "https://youtu.be/abc456"},
+            ["sentiment_result"],
+            "test_youtube_to_sentiment",
+        )
+        created_task_ids.append(task_body["id"])
+        assert task_body["status"] == "COMPLETED"
+
+    def test_youtube_to_summary(self, created_task_ids):
+        task_body, durations = _create_and_poll(
+            {"url": "https://youtube.com/watch?v=test789"},
+            ["summary"],
+            "test_youtube_to_summary",
+        )
+        created_task_ids.append(task_body["id"])
+        assert task_body["status"] == "COMPLETED"
+
+    def test_youtube_multi_output(self, created_task_ids):
+        task_body, durations = _create_and_poll(
+            {"url": "https://youtube.com/watch?v=multi"},
+            ["ner_result", "sentiment_result", "summary", "keywords"],
+            "test_youtube_multi_output",
+        )
+        created_task_ids.append(task_body["id"])
+        assert task_body["status"] == "COMPLETED"
+        assert len(task_body["final_output"]) == 4
+
+
+# ============================================================
+# API with input_type hint (optional field)
+# ============================================================
+
+class TestInputTypeHint:
+    """Verify input_type hint is accepted and correctly routes the request."""
+
+    def test_text_with_type_hint(self, created_task_ids):
+        code, body, ms = _api("POST", TASKS_URL, json={
+            "input_type": "text",
+            "input_data": "Hello world, this is a test.",
+            "outputs": ["ner_result"],
         })
-        create_time = time.time() - start
+        assert code == 201
+        created_task_ids.append(body["id"])
+        assert body["input_type"] == "text"
+        _write_report("test_text_with_type_hint", [
+            f"POST with input_type=text, input_data as string",
+            f"HTTP {code}, task_id={body['id']}",
+            "PASS",
+        ])
 
-        assert code == 201, f"Expected 201, got {code}: {body}"
-        task_id = body["id"]
-        created_task_ids.append(task_id)
-        assert body["status"] == "PENDING"
-
-        # Poll for completion
-        poll_start = time.time()
-        status = "PENDING"
-        task_body = None
-        for _ in range(60):
-            time.sleep(0.5)
-            poll_code, task_body = _api("GET", f"{TASKS_URL}/{task_id}")
-            assert poll_code == 200
-            status = task_body["status"]
-            if status in ("COMPLETED", "FAILED", "TERMINATED"):
-                break
-
-        poll_time = time.time() - poll_start
-        total_time = time.time() - start
-
-        report_lines = [
-            f"Task: {input_type} -> {desired_output}",
-            f"Task ID: {task_id}",
-            f"Flow: {body.get('resolved_flow', 'DAG')}",
-            f"Create time: {create_time:.2f}s",
-            f"Poll time: {poll_time:.2f}s",
-            f"Total time: {total_time:.2f}s",
-            f"Final status: {status}",
-            f"Resources: {_resource_usage()}",
-        ]
-
-        if status == "COMPLETED":
-            final_output = task_body.get("final_output", {})
-            assert expect_field in final_output, \
-                f"Missing '{expect_field}' in final_output: {final_output}"
-            report_lines.append(f"Output keys: {list(final_output.keys())}")
-            report_lines.append("PASS")
-        else:
-            report_lines.append(f"Error: {task_body.get('error')}")
-            report_lines.append("FAIL")
-
-        _write_report(f"test_create_and_poll_{input_type}_{desired_output}", report_lines)
-        assert status == "COMPLETED", f"Task {task_id} ended with status={status}"
+    def test_youtube_with_type_hint(self, created_task_ids):
+        code, body, ms = _api("POST", TASKS_URL, json={
+            "input_type": "youtube_link",
+            "input_data": "https://youtube.com/watch?v=test",
+            "outputs": ["summary"],
+        })
+        assert code == 201
+        created_task_ids.append(body["id"])
+        assert body["input_type"] == "youtube_url"
+        _write_report("test_youtube_with_type_hint", [
+            f"POST with input_type=youtube_link (hint), input_data as string URL",
+            f"HTTP {code}, detected input_type={body['input_type']}",
+            "PASS",
+        ])
 
 
-class TestTaskList:
-    """Task listing and filtering (cursor-based pagination)."""
+# ============================================================
+# Task management
+# ============================================================
 
-    def test_list_all(self, created_task_ids):
-        code, body = _api("GET", TASKS_URL)
+class TestTaskManagement:
+
+    def test_list_all(self):
+        code, body, ms = _api("GET", TASKS_URL)
         assert code == 200
         assert "tasks" in body
         assert isinstance(body["tasks"], list)
         _write_report("test_list_all", [
+            f"GET {TASKS_URL} -> HTTP {code} ({ms}ms)",
             f"Tasks returned: {len(body['tasks'])}",
             f"has_more: {body.get('has_more')}",
             "PASS",
         ])
 
     def test_list_with_filters(self):
-        code, body = _api("GET", f"{TASKS_URL}?status=COMPLETED&limit=5")
+        code, body, ms = _api("GET", f"{TASKS_URL}?status=COMPLETED&limit=5")
         assert code == 200
         for t in body["tasks"]:
             assert t["status"] == "COMPLETED"
         _write_report("test_list_with_filters", [
-            f"Filter: status=COMPLETED, limit=5",
+            f"GET {TASKS_URL}?status=COMPLETED&limit=5 -> HTTP {code} ({ms}ms)",
             f"Tasks: {len(body['tasks'])}",
             "PASS",
         ])
 
+    def test_create_and_delete(self):
+        code, body, ms = _api("POST", TASKS_URL, json={
+            "input_data": {"text": "delete me"},
+            "outputs": ["ner_result"],
+        })
+        assert code == 201
+        task_id = body["id"]
+
+        del_code, del_body, del_ms = _api("DELETE", f"{TASKS_URL}/{task_id}")
+        assert del_code == 200
+
+        get_code, get_body, get_ms = _api("GET", f"{TASKS_URL}/{task_id}")
+        assert get_code == 404
+
+        _write_report("test_create_and_delete", [
+            f"Created task {task_id}",
+            f"DELETE -> HTTP {del_code} ({del_ms}ms)",
+            f"GET after delete -> HTTP {get_code} (404 expected)",
+            "PASS",
+        ])
+
+
+# ============================================================
+# Invalid requests / error handling
+# ============================================================
 
 class TestInvalidRequests:
-    """Error handling for invalid requests."""
 
     def test_empty_body(self):
-        code, body = _api("POST", TASKS_URL, json={})
+        code, body, ms = _api("POST", TASKS_URL, json={})
         assert code == 400
-        assert "errors" in body or "message" in body
-        _write_report("test_empty_body", [f"Status: {code}", f"Body: {body}", "PASS"])
+        _write_report("test_empty_body", [
+            f"POST empty body -> HTTP {code} ({ms}ms)",
+            f"Response: {body}",
+            "PASS",
+        ])
 
-    def test_invalid_input_type(self):
-        code, body = _api("POST", TASKS_URL, json={
-            "input_type": "invalid",
-            "desired_output": "ner",
-            "input_data": "hello",
+    def test_invalid_output_type(self):
+        code, body, ms = _api("POST", TASKS_URL, json={
+            "input_data": {"text": "hello"},
+            "outputs": ["nonexistent_output"],
         })
         assert code == 400
-        _write_report("test_invalid_input_type", [f"Status: {code}", f"Body: {body}", "PASS"])
+        _write_report("test_invalid_output_type", [
+            f"POST invalid output -> HTTP {code} ({ms}ms)",
+            f"Response: {body}",
+            "PASS",
+        ])
 
-    def test_invalid_desired_output(self):
-        code, body = _api("POST", TASKS_URL, json={
-            "input_type": "text",
-            "desired_output": "nonexistent",
-            "input_data": "hello",
+    def test_empty_outputs_list(self):
+        code, body, ms = _api("POST", TASKS_URL, json={
+            "input_data": {"text": "hello"},
+            "outputs": [],
         })
         assert code == 400
-        _write_report("test_invalid_desired_output", [f"Status: {code}", f"Body: {body}", "PASS"])
+        _write_report("test_empty_outputs_list", [
+            f"POST empty outputs -> HTTP {code} ({ms}ms)",
+            "PASS",
+        ])
 
-    def test_invalid_combination(self):
-        code, body = _api("POST", TASKS_URL, json={
-            "input_type": "text",
-            "desired_output": "stt",
-            "input_data": "hello",
+    def test_unclassifiable_input(self):
+        """input_data with no recognizable fields."""
+        code, body, ms = _api("POST", TASKS_URL, json={
+            "input_data": {"unknown_field": "value"},
+            "outputs": ["ner_result"],
         })
         assert code == 400
-        _write_report("test_invalid_combination", [f"Status: {code}", f"Body: {body}", "PASS"])
+        _write_report("test_unclassifiable_input", [
+            f"POST unknown input_data fields -> HTTP {code} ({ms}ms)",
+            "PASS",
+        ])
 
     def test_nonexistent_task(self):
         fake_id = str(uuid.uuid4())
-        code, body = _api("GET", f"{TASKS_URL}/{fake_id}")
+        code, body, ms = _api("GET", f"{TASKS_URL}/{fake_id}")
         assert code == 404
-        _write_report("test_nonexistent_task", [f"Status: {code}", f"Body: {body}", "PASS"])
+        _write_report("test_nonexistent_task", [
+            f"GET nonexistent task -> HTTP {code} ({ms}ms)",
+            "PASS",
+        ])
 
     def test_delete_nonexistent_task(self):
         fake_id = str(uuid.uuid4())
-        code, body = _api("DELETE", f"{TASKS_URL}/{fake_id}")
+        code, body, ms = _api("DELETE", f"{TASKS_URL}/{fake_id}")
         assert code == 404
-        _write_report("test_delete_nonexistent", [f"Status: {code}", f"Body: {body}", "PASS"])
+        _write_report("test_delete_nonexistent", [
+            f"DELETE nonexistent task -> HTTP {code} ({ms}ms)",
+            "PASS",
+        ])
 
     def test_malformed_json(self):
-        """Send non-JSON body."""
         resp = requests.post(
             f"{API_URL}{TASKS_URL}",
             data="this is not json",
@@ -270,39 +530,28 @@ class TestInvalidRequests:
             timeout=10,
         )
         assert resp.status_code in (400, 500)
-        _write_report("test_malformed_json", [f"Status: {resp.status_code}", "PASS"])
+        _write_report("test_malformed_json", [
+            f"POST malformed JSON -> HTTP {resp.status_code}",
+            "PASS",
+        ])
 
-
-class TestTaskDeletion:
-    """Task deletion lifecycle."""
-
-    def test_create_and_delete(self):
-        # Create
-        code, body = _api("POST", TASKS_URL, json={
-            "input_type": "text",
-            "input_data": "delete me",
-            "desired_output": "ner",
+    def test_template_injection(self):
+        code, body, ms = _api("POST", TASKS_URL, json={
+            "input_data": {"text": "{{config.items()}}"},
+            "outputs": ["ner_result"],
         })
-        assert code == 201
-        task_id = body["id"]
-
-        # Delete
-        code, body = _api("DELETE", f"{TASKS_URL}/{task_id}")
-        assert code == 200
-
-        # Verify gone
-        code, body = _api("GET", f"{TASKS_URL}/{task_id}")
-        assert code == 404
-
-        _write_report("test_create_and_delete", [
-            f"Task ID: {task_id}",
-            "Created -> Deleted -> Verified 404",
+        assert code == 400
+        _write_report("test_template_injection", [
+            f"POST template injection -> HTTP {code} ({ms}ms)",
             "PASS",
         ])
 
 
+# ============================================================
+# Observability
+# ============================================================
+
 class TestObservability:
-    """Check Jaeger traces are being exported."""
 
     def test_jaeger_has_services(self):
         try:
@@ -311,7 +560,7 @@ class TestObservability:
             data = resp.json().get("data", [])
             _write_report("test_jaeger_has_services", [
                 f"Services: {data}",
-                "PASS" if data else "SKIP (no services)",
+                "PASS" if data else "SKIP (no services yet)",
             ])
             if not data:
                 pytest.skip("No services in Jaeger yet")

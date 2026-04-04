@@ -35,11 +35,7 @@ class TestLargePayloads:
         size_mb = 100
         large_text = "A" * (size_mb * 1024 * 1024)
         start = time.time()
-        errors = validate_task_input({
-            "input_type": "text",
-            "desired_output": "ner",
-            "input_data": large_text,
-        })
+        errors = validate_task_input(large_text, ["ner_result"])
         elapsed = time.time() - start
 
         _write_report("test_100mb_text_validation", [
@@ -55,11 +51,7 @@ class TestLargePayloads:
         """Validate a large nested JSON input_data."""
         large_obj = {f"key_{i}": f"value_{i}" * 1000 for i in range(10000)}
         start = time.time()
-        errors = validate_task_input({
-            "input_type": "text",
-            "desired_output": "ner",
-            "input_data": large_obj,
-        })
+        errors = validate_task_input(large_obj, ["ner_result"])
         elapsed = time.time() - start
 
         _write_report("test_large_json_object_validation", [
@@ -77,11 +69,7 @@ class TestLargePayloads:
             temp_path = f.name
 
         try:
-            errors = validate_task_input({
-                "input_type": "file_upload",
-                "desired_output": "stt",
-                "input_data": {"file_path": temp_path},
-            })
+            errors = validate_task_input({"file_path": temp_path}, ["stt_result"])
             _write_report("test_simulated_large_file_upload", [
                 f"File size: 10MB at {temp_path}",
                 f"Errors: {errors}",

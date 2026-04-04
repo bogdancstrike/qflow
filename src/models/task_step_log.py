@@ -1,8 +1,8 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, String, Integer, DateTime, Text, ForeignKey
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy import Column, String, Integer, DateTime, Text, JSON, ForeignKey
+from sqlalchemy.orm import relationship
 
 from src.models.task import Base
 
@@ -10,14 +10,14 @@ from src.models.task import Base
 class TaskStepLog(Base):
     __tablename__ = "task_step_logs"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    task_id = Column(UUID(as_uuid=True), ForeignKey("tasks.id"), nullable=False, index=True)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    task_id = Column(String(36), ForeignKey("tasks.id"), nullable=False, index=True)
     task_ref = Column(String(100), nullable=False)
     task_type = Column(String(50), nullable=False)
     attempt = Column(Integer, nullable=False, default=1)
     status = Column(String(20), nullable=False)
-    request_payload = Column(JSONB, nullable=True)
-    response_payload = Column(JSONB, nullable=True)
+    request_payload = Column(JSON, nullable=True)
+    response_payload = Column(JSON, nullable=True)
     branch_taken = Column(String(100), nullable=True)
     iteration = Column(Integer, nullable=True)
     error_message = Column(Text, nullable=True)

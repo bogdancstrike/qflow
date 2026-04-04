@@ -24,7 +24,7 @@ def create_task(input_data: dict, outputs: List[str]) -> dict:
 
     plan = build_plan(input_data, outputs)
 
-    task_id = uuid.uuid4()
+    task_id = str(uuid.uuid4())
     session = get_session()
     try:
         task = Task(

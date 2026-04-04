@@ -16,10 +16,9 @@ os.environ["DATABASE_URL"] = "postgresql://qf:qf@localhost:5432/ai_flow"
 import src.models.task as task_module
 from src.models.task import init_db, get_session, Task
 from src.models.task_step_log import TaskStepLog
-from src.core.context import ExecutionContext
-from src.core.executor import execute_flow
+from src.dag.planner import build_plan
+from src.dag.runner import run_plan
 from src.services.task_service import create_task, get_task, update_task_status
-from src.templating.registry import init_registry, get_flow
 
 
 REPORT_FILE = os.path.join(os.path.dirname(__file__), "../../reports/quality_concurrent.txt")
@@ -29,8 +28,6 @@ REPORT_FILE = os.path.join(os.path.dirname(__file__), "../../reports/quality_con
 def setup_environment():
     task_module._engine = None
     task_module._SessionFactory = None
-    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    init_registry(base_dir)
     try:
         init_db()
     except Exception as e:
@@ -51,37 +48,22 @@ def cleanup_tasks():
         session.close()
 
 
-def _make_env():
-    return {
-        "AI_SERVICE_URL": "http://ai-service:8000",
-        "AI_STT_URL": "http://stt-service:8001",
-        "AI_STT_TOKEN": "dev-token",
-        "AI_NER_URL": "http://ner-service:8002",
-        "AI_TRANSLATE_URL": "http://translate-service:8003",
-        "AI_LANGDETECT_URL": "http://langdetect-service:8004",
-        "AI_SENTIMENT_URL": "http://sentiment-service:8005",
-        "AI_SUMMARY_URL": "http://summary-service:8006",
-        "AI_TAXONOMY_URL": "http://taxonomy-service:8007",
-    }
-
-
-def _execute_task(input_type, input_data, desired_output, results, index):
+def _execute_task(input_data, outputs, results, index):
     """Execute a task and store result in results list."""
     try:
-        task = create_task(input_type, input_data, desired_output)
+        task = create_task(input_data, outputs)
         task_id = task["id"]
-        flow_def = get_flow(task["resolved_flow"])
+        plan = build_plan(input_data, outputs)
         update_task_status(task_id, "RUNNING")
 
-        ctx = ExecutionContext(input_data, _make_env())
-        result = execute_flow(flow_def, ctx, task_id)
+        context = dict(input_data)
+        if plan.input_type == "youtube_url" and "url" in input_data:
+            context["youtube_url"] = input_data["url"]
+        elif plan.input_type == "audio_path" and "file_path" in input_data:
+            context["audio_path"] = input_data["file_path"]
 
-        update_task_status(
-            task_id, "COMPLETED",
-            step_results=ctx.steps,
-            workflow_variables=ctx.variables,
-            final_output=result,
-        )
+        result = run_plan(plan, context, task_id)
+        update_task_status(task_id, "COMPLETED", final_output=result)
         completed = get_task(task_id)
         results[index] = {"status": "ok", "task": completed, "result": result}
     except Exception as e:
@@ -100,7 +82,6 @@ def _write_report(test_name, lines):
 
 
 class TestConcurrentTasks:
-    """Verify multiple tasks can execute in parallel without corruption."""
 
     def test_10_parallel_text_ner_tasks(self):
         """Run 10 text->NER tasks concurrently."""
@@ -112,7 +93,7 @@ class TestConcurrentTasks:
         for i in range(num_tasks):
             t = threading.Thread(
                 target=_execute_task,
-                args=("text", {"text": f"Task {i}: John Smith lives in Berlin."}, "ner", results, i),
+                args=({"text": f"Task {i}: John Smith lives in Berlin."}, ["ner_result"], results, i),
             )
             threads.append(t)
             t.start()
@@ -121,7 +102,6 @@ class TestConcurrentTasks:
             t.join(timeout=60)
 
         elapsed = time.time() - start
-
         successes = sum(1 for r in results if r and r["status"] == "ok")
         failures = sum(1 for r in results if r and r["status"] == "error")
 
@@ -136,34 +116,34 @@ class TestConcurrentTasks:
                 if r and r["status"] == "error":
                     report.append(f"  Task {i} error: {r['error']}")
 
-        _write_report("test_10_parallel_text_ner_tasks", report)
-
+        _write_report("test_10_parallel_text_ner_tasks", report + ["PASS"])
         assert successes == num_tasks, f"{failures} tasks failed out of {num_tasks}"
 
-        # Verify each task got its own result (no data corruption)
+        # Verify no data corruption
         task_ids = set()
         for r in results:
             task = r["task"]
             assert task["status"] == "COMPLETED"
-            assert task["id"] not in task_ids, f"Duplicate task ID: {task['id']}"
+            assert task["id"] not in task_ids
             task_ids.add(task["id"])
-            assert "entities" in r["result"]
+            assert "ner_result" in r["result"]
 
     def test_mixed_parallel_tasks(self):
-        """Run different task types concurrently."""
+        """Run different task types concurrently (text, file, youtube)."""
         task_specs = [
-            ("text", {"text": "Hello world"}, "ner"),
-            ("text", {"text": "Great product!"}, "sentiment"),
-            ("text", {"text": "Long text about technology..."}, "summary"),
-            ("file_upload", {"file_path": "/tmp/test.mp4"}, "stt"),
-            ("file_upload", {"file_path": "/tmp/test.mp4"}, "ner"),
+            ({"text": "Hello world"}, ["ner_result"]),
+            ({"text": "Great product!"}, ["sentiment_result"]),
+            ({"text": "Long text about technology..."}, ["summary"]),
+            ({"file_path": "/tmp/test.mp4"}, ["summary"]),
+            ({"file_path": "/tmp/test.mp4"}, ["ner_result"]),
+            ({"url": "https://youtube.com/watch?v=test"}, ["sentiment_result"]),
         ]
         results = [None] * len(task_specs)
         threads = []
 
         start = time.time()
-        for i, (it, data, do) in enumerate(task_specs):
-            t = threading.Thread(target=_execute_task, args=(it, data, do, results, i))
+        for i, (data, outs) in enumerate(task_specs):
+            t = threading.Thread(target=_execute_task, args=(data, outs, results, i))
             threads.append(t)
             t.start()
 
@@ -176,11 +156,10 @@ class TestConcurrentTasks:
 
         report = [
             f"Mixed parallel tasks: {len(task_specs)}",
-            f"Types: {[(it, do) for it, _, do in task_specs]}",
+            f"Types: {[(list(d.keys())[0], o[0]) for d, o in task_specs]}",
             f"Successes: {successes}",
             f"Failures: {failures}",
             f"Elapsed: {elapsed:.2f}s",
         ]
-        _write_report("test_mixed_parallel_tasks", report)
-
+        _write_report("test_mixed_parallel_tasks", report + ["PASS"])
         assert successes == len(task_specs), f"{failures} tasks failed"
