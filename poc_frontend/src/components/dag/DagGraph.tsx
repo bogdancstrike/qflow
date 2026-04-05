@@ -1,28 +1,55 @@
-import { useMemo, useCallback } from 'react'
+import { useMemo } from 'react'
 import ReactFlow, {
   Background,
   Controls,
-  MiniMap,
   type Node,
   type Edge,
   useNodesState,
   useEdgesState,
+  MarkerType,
 } from 'reactflow'
 import dagre from 'dagre'
+import { theme } from 'antd'
 import 'reactflow/dist/style.css'
 import type { ExecutionPlan } from '@/types'
-import { NODE_LABELS, NODE_DESCRIPTIONS } from '@/lib/constants'
+import { NODE_LABELS } from '@/lib/constants'
 
-const NODE_W = 160
-const NODE_H = 56
+const NODE_W = 180
+const NODE_H = 60
 
 type NodeState = 'pending' | 'running' | 'completed' | 'failed'
 
-const STATE_STYLES: Record<NodeState, React.CSSProperties> = {
-  pending: { background: '#fafafa', border: '1px solid #d9d9d9', color: '#8c8c8c' },
-  running: { background: '#e6f4ff', border: '2px solid #1677ff', color: '#1677ff', fontWeight: 600 },
-  completed: { background: '#f6ffed', border: '1px solid #52c41a', color: '#389e0d' },
-  failed: { background: '#fff2f0', border: '1px solid #ff4d4f', color: '#cf1322' },
+const GET_STATE_COLORS = (state: NodeState, token: any) => {
+  switch (state) {
+    case 'running':
+      return { 
+        bg: token.colorInfoBg, 
+        border: token.colorInfo, 
+        text: token.colorInfoText,
+        shadow: `0 0 10px ${token.colorInfo}40`
+      }
+    case 'completed':
+      return { 
+        bg: token.colorSuccessBg, 
+        border: token.colorSuccess, 
+        text: token.colorSuccessText,
+        shadow: 'none'
+      }
+    case 'failed':
+      return { 
+        bg: token.colorErrorBg, 
+        border: token.colorError, 
+        text: token.colorErrorText,
+        shadow: 'none'
+      }
+    default:
+      return { 
+        bg: token.colorFillQuaternary, 
+        border: token.colorBorder, 
+        text: token.colorTextSecondary,
+        shadow: 'none'
+      }
+  }
 }
 
 function getNodeState(
@@ -39,7 +66,7 @@ function getNodeState(
 
 function applyDagreLayout(nodes: Node[], edges: Edge[]): Node[] {
   const g = new dagre.graphlib.Graph()
-  g.setGraph({ rankdir: 'LR', nodesep: 30, ranksep: 50 })
+  g.setGraph({ rankdir: 'LR', nodesep: 40, ranksep: 60 })
   g.setDefaultEdgeLabel(() => ({}))
 
   nodes.forEach((n) => g.setNode(n.id, { width: NODE_W, height: NODE_H }))
@@ -61,26 +88,40 @@ interface Props {
 }
 
 export function DagGraph({ plan, currentStep, stepResults, hasError = false, height = 320 }: Props) {
+  const { token } = theme.useToken()
+
   const { nodes: rawNodes, edges: rawEdges } = useMemo(() => {
     const nodes: Node[] = []
     const edges: Edge[] = []
 
     const addNode = (id: string, state: NodeState) => {
+      const colors = GET_STATE_COLORS(state, token)
       nodes.push({
         id,
         type: 'default',
         position: { x: 0, y: 0 },
         data: {
           label: (
-            <div style={{ fontSize: 12, lineHeight: 1.4 }}>
-              <div style={{ fontWeight: state === 'running' ? 700 : 400 }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontWeight: 600, fontSize: 13, color: colors.text }}>
                 {NODE_LABELS[id] ?? id}
               </div>
-              <div style={{ fontSize: 10, opacity: 0.7 }}>{id}</div>
+              <div style={{ fontSize: 10, opacity: 0.6, color: colors.text }}>{id}</div>
             </div>
           ),
         },
-        style: { ...STATE_STYLES[state], borderRadius: 8, width: NODE_W, height: NODE_H, display: 'flex', alignItems: 'center', justifyContent: 'center' },
+        style: { 
+          background: colors.bg, 
+          border: `1px solid ${colors.border}`, 
+          borderRadius: 4, 
+          width: NODE_W, 
+          height: NODE_H, 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          boxShadow: colors.shadow,
+          transition: 'all 0.3s'
+        },
       })
     }
 
@@ -90,12 +131,21 @@ export function DagGraph({ plan, currentStep, stepResults, hasError = false, hei
         source,
         target,
         label,
-        style: { stroke: '#bfbfbf' },
+        type: 'straight', // Straight lines as requested
+        labelStyle: { fill: token.colorTextSecondary, fontSize: 10, fontWeight: 500 },
+        style: { 
+          stroke: currentStep === target ? token.colorInfo : token.colorBorder, 
+          strokeWidth: 2 
+        },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: currentStep === target ? token.colorInfo : token.colorBorder,
+        },
         animated: currentStep === target,
       })
     }
 
-    // Phase 1 — ingest chain
+    // Phase 1
     let prev: string | null = null
     for (const step of plan.ingest_steps) {
       addNode(step, getNodeState(step, currentStep, stepResults, hasError))
@@ -103,27 +153,22 @@ export function DagGraph({ plan, currentStep, stepResults, hasError = false, hei
       prev = step
     }
 
-    // Phase 2 — branches (de-duplicate nodes that appear in multiple branches)
+    // Phase 2
     const seen = new Set<string>()
     for (const branch of plan.branches) {
       let branchPrev = prev
       for (const step of branch.steps) {
-        const nodeId = `${branch.output_type}__${step}`
-        // Use bare step id for shared nodes (first occurrence wins positionally but edges are unique)
-        const uniqueId = seen.has(step) ? nodeId : step
-
         if (!seen.has(step)) {
           seen.add(step)
           addNode(step, getNodeState(step, currentStep, stepResults, hasError))
         }
-
-        if (branchPrev) addEdge(branchPrev, uniqueId === nodeId ? step : step, branch.output_type.replace('_result', ''))
-        branchPrev = uniqueId === nodeId ? step : step
+        if (branchPrev) addEdge(branchPrev, step, branch.output_type.replace('_result', ''))
+        branchPrev = step
       }
     }
 
     return { nodes, edges }
-  }, [plan, currentStep, stepResults, hasError])
+  }, [plan, currentStep, stepResults, hasError, token])
 
   const layoutedNodes = useMemo(() => applyDagreLayout(rawNodes, rawEdges), [rawNodes, rawEdges])
 
@@ -131,7 +176,13 @@ export function DagGraph({ plan, currentStep, stepResults, hasError = false, hei
   const [edges] = useEdgesState(rawEdges)
 
   return (
-    <div style={{ height, background: '#f5f5f5', borderRadius: 8, overflow: 'hidden' }}>
+    <div style={{ 
+      height, 
+      background: token.colorFillAlter, 
+      borderRadius: token.borderRadiusLG, 
+      overflow: 'hidden',
+      border: `1px solid ${token.colorBorderSecondary}`
+    }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -143,7 +194,7 @@ export function DagGraph({ plan, currentStep, stepResults, hasError = false, hei
         zoomOnScroll={false}
         panOnScroll={false}
       >
-        <Background gap={20} color="#e0e0e0" />
+        <Background gap={20} color={token.colorBorderSecondary} />
         <Controls showInteractive={false} />
       </ReactFlow>
     </div>

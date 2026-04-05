@@ -1,4 +1,4 @@
-import { Layout } from 'antd'
+import { Layout, theme } from 'antd'
 import { Outlet } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
@@ -6,6 +6,7 @@ import { Topbar } from './Topbar'
 const { Content } = Layout
 
 export function AppShell() {
+  const { token } = theme.useToken()
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Layout>
@@ -14,7 +15,7 @@ export function AppShell() {
           <Topbar />
           <Content style={{ 
             padding: '24px', 
-            background: '#f0f2f5', 
+            background: token.colorBgLayout, 
             minHeight: 'calc(100vh - 64px)',
             overflowY: 'auto'
           }}>

@@ -1,4 +1,4 @@
-import { Typography, Tag, Progress, Space, Alert, Divider } from 'antd'
+import { Typography, Tag, Progress, Space, Divider, theme } from 'antd'
 import type { FinalOutput, NerEntity } from '@/types'
 import { NER_BG_COLORS, NER_COLORS, OUTPUT_LABELS } from '@/lib/constants'
 import { CopyButton } from '@/components/shared/CopyButton'
@@ -9,23 +9,24 @@ const { Text, Paragraph, Title } = Typography
 // ── NER ──────────────────────────────────────────────────────────────────────
 
 function NerViewer({ entities, sourceText }: { entities: NerEntity[]; sourceText?: string }) {
+  const { token } = theme.useToken()
   if (entities.length === 0) return <Text type="secondary">No entities found</Text>
 
   // Inline highlight
-  const highlighted = sourceText ? renderHighlighted(sourceText, entities) : null
+  const highlighted = sourceText ? renderHighlighted(sourceText, entities, token) : null
 
   return (
     <Space direction="vertical" style={{ width: '100%' }}>
       {highlighted && (
-        <div style={{ lineHeight: 1.8, fontSize: 14 }}>{highlighted}</div>
+        <div style={{ lineHeight: 1.8, fontSize: 14, color: token.colorText }}>{highlighted}</div>
       )}
       <Divider style={{ margin: '8px 0' }} />
       <Space wrap>
         {entities.map((e, i) => (
-          <Tag key={i} color={NER_COLORS[e.type]} style={{ background: NER_BG_COLORS[e.type] }}>
-            <Text style={{ color: NER_COLORS[e.type] }}>{e.type}</Text>
+          <Tag key={i} color={NER_COLORS[e.type]} style={{ background: NER_BG_COLORS[e.type], border: 'none' }}>
+            <Text style={{ color: NER_COLORS[e.type], fontSize: 11, fontWeight: 600 }}>{e.type}</Text>
             {' '}
-            <Text strong>{e.text}</Text>
+            <Text strong style={{ color: NER_COLORS[e.type] }}>{e.text}</Text>
           </Tag>
         ))}
       </Space>
@@ -33,7 +34,7 @@ function NerViewer({ entities, sourceText }: { entities: NerEntity[]; sourceText
   )
 }
 
-function renderHighlighted(text: string, entities: NerEntity[]) {
+function renderHighlighted(text: string, entities: NerEntity[], token: any) {
   const sorted = [...entities].sort((a, b) => a.start - b.start)
   const parts: React.ReactNode[] = []
   let cursor = 0
@@ -45,10 +46,10 @@ function renderHighlighted(text: string, entities: NerEntity[]) {
         key={e.start}
         style={{
           background: NER_BG_COLORS[e.type],
-          border: `1px solid ${NER_COLORS[e.type]}`,
-          borderRadius: 3,
+          borderBottom: `2px solid ${NER_COLORS[e.type]}`,
+          color: 'inherit',
           padding: '0 2px',
-          fontSize: 13,
+          fontSize: 14,
         }}
         title={e.type}
       >
@@ -84,10 +85,18 @@ function SentimentViewer({ sentiment, score }: { sentiment: string; score: numbe
 // ── Summary ───────────────────────────────────────────────────────────────────
 
 function SummaryViewer({ text }: { text: string }) {
+  const { token } = theme.useToken()
   return (
     <Space direction="vertical" style={{ width: '100%' }}>
-      <blockquote style={{ borderLeft: '3px solid #1677ff', paddingLeft: 16, margin: 0 }}>
-        <Paragraph style={{ margin: 0, fontSize: 15 }}>{text}</Paragraph>
+      <blockquote style={{ 
+        borderLeft: `4px solid ${token.colorPrimary}`, 
+        paddingLeft: 16, 
+        margin: 0,
+        background: token.colorFillAlter,
+        padding: '12px 16px',
+        borderRadius: `0 ${token.borderRadius}px ${token.borderRadius}px 0`
+      }}>
+        <Paragraph style={{ margin: 0, fontSize: 15, color: token.colorText }}>{text}</Paragraph>
       </blockquote>
       <CopyButton text={text} />
     </Space>
@@ -100,7 +109,7 @@ function TagViewer({ items }: { items: string[] }) {
   return (
     <Space wrap>
       {items.map((t) => (
-        <Tag key={t} style={{ fontSize: 13 }}>{t}</Tag>
+        <Tag key={t} style={{ fontSize: 13, padding: '4px 12px', borderRadius: 4 }}>{t}</Tag>
       ))}
     </Space>
   )
@@ -125,7 +134,7 @@ function LangMetaViewer({ language, text }: { language: string; text: string }) 
 function TranslationViewer({ text }: { text: string }) {
   return (
     <Space direction="vertical" style={{ width: '100%' }}>
-      <Paragraph style={{ margin: 0 }}>{text}</Paragraph>
+      <Paragraph style={{ margin: 0, fontSize: 15, lineHeight: 1.6 }}>{text}</Paragraph>
       <CopyButton text={text} />
     </Space>
   )
@@ -139,6 +148,7 @@ interface Props {
 }
 
 export function OutputViewer({ finalOutput, sourceText }: Props) {
+  const { token } = theme.useToken()
   const entries = Object.entries(finalOutput) as [keyof FinalOutput, unknown][]
   if (entries.length === 0) return <Text type="secondary">No outputs available</Text>
 
@@ -175,8 +185,19 @@ export function OutputViewer({ finalOutput, sourceText }: Props) {
         }
 
         return (
-          <div key={key} style={{ background: '#fff', borderRadius: 8, padding: 16, border: '1px solid #f0f0f0' }}>
-            <Title level={5} style={{ margin: '0 0 12px' }}>{label}</Title>
+          <div 
+            key={key} 
+            style={{ 
+              background: token.colorBgContainer, 
+              borderRadius: token.borderRadiusLG, 
+              padding: 24, 
+              border: `1px solid ${token.colorBorderSecondary}`,
+              boxShadow: token.boxShadowTertiary
+            }}
+          >
+            <Title level={5} style={{ margin: '0 0 16px', color: token.colorTextHeading, textTransform: 'uppercase', fontSize: 13, letterSpacing: '0.05em' }}>
+              {label}
+            </Title>
             {content}
           </div>
         )

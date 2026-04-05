@@ -1,18 +1,21 @@
 export function formatRelativeTime(isoString: string): string {
+  const utcString = isoString.endsWith('Z') ? isoString : isoString + 'Z'
   const now = Date.now()
-  const then = new Date(isoString).getTime()
+  const then = new Date(utcString).getTime()
   const diffMs = now - then
   const diffSec = Math.floor(diffMs / 1000)
-  if (diffSec < 60) return `${diffSec}s ago`
+  if (diffSec < 60) return `${diffSec < 0 ? 0 : diffSec}s ago`
   const diffMin = Math.floor(diffSec / 60)
   if (diffMin < 60) return `${diffMin}m ago`
   const diffHour = Math.floor(diffMin / 60)
   if (diffHour < 24) return `${diffHour}h ago`
-  return new Date(isoString).toLocaleDateString()
+  return new Date(utcString).toLocaleDateString()
 }
 
 export function formatDuration(startIso: string, endIso: string): string {
-  const ms = new Date(endIso).getTime() - new Date(startIso).getTime()
+  const startUtc = startIso.endsWith('Z') ? startIso : startIso + 'Z'
+  const endUtc = endIso.endsWith('Z') ? endIso : endIso + 'Z'
+  const ms = new Date(endUtc).getTime() - new Date(startUtc).getTime()
   if (ms < 1000) return `${ms}ms`
   if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`
   return `${Math.floor(ms / 60000)}m ${Math.floor((ms % 60000) / 1000)}s`

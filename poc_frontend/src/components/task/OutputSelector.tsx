@@ -1,4 +1,4 @@
-import { Space, Button, Typography, Tooltip, Tag } from 'antd'
+import { Space, Button, Typography, Tooltip, Tag, theme } from 'antd'
 import type { OutputType } from '@/types'
 import { ALL_OUTPUTS, OUTPUT_LABELS, OUTPUT_DESCRIPTIONS } from '@/lib/constants'
 
@@ -11,6 +11,7 @@ interface Props {
 }
 
 export function OutputSelector({ value, onChange }: Props) {
+  const { token } = theme.useToken()
   const allSelected = value.length === ALL_OUTPUTS.length
 
   const handleChange = (output: OutputType, checked: boolean) => {
@@ -23,7 +24,7 @@ export function OutputSelector({ value, onChange }: Props) {
   return (
     <div style={{ width: '100%' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <Text strong style={{ fontSize: 13, color: '#475569' }}>ANALYTICS ENGINE SELECTION</Text>
+        <Text strong style={{ fontSize: 13, color: token.colorTextSecondary }}>ANALYTICS ENGINE SELECTION</Text>
         <Button
           size="small"
           type="link"
@@ -45,9 +46,9 @@ export function OutputSelector({ value, onChange }: Props) {
                 fontSize: 13,
                 fontWeight: 500,
                 borderRadius: 4,
-                border: value.includes(output) ? '1px solid #1890ff' : '1px solid #d9d9d9',
-                background: value.includes(output) ? '#e6f7ff' : '#fff',
-                color: value.includes(output) ? '#1890ff' : '#595959',
+                border: `1px solid ${value.includes(output) ? token.colorPrimary : token.colorBorder}`,
+                background: value.includes(output) ? token.colorFillAlter : token.colorBgContainer,
+                color: value.includes(output) ? token.colorPrimary : token.colorText,
                 cursor: 'pointer',
                 transition: 'all 0.2s',
                 margin: 0
