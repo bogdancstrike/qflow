@@ -1,48 +1,81 @@
-export function formatRelativeTime(isoString: string): string {
-  const utcString = isoString.endsWith('Z') ? isoString : isoString + 'Z'
-  const now = Date.now()
-  const then = new Date(utcString).getTime()
-  const diffMs = now - then
-  const diffSec = Math.floor(diffMs / 1000)
-  if (diffSec < 60) return `${diffSec < 0 ? 0 : diffSec}s ago`
-  const diffMin = Math.floor(diffSec / 60)
-  if (diffMin < 60) return `${diffMin}m ago`
-  const diffHour = Math.floor(diffMin / 60)
-  if (diffHour < 24) return `${diffHour}h ago`
-  return new Date(utcString).toLocaleDateString()
+import dayjs from 'dayjs'
+import relativeTime from 'dayjs/plugin/relativeTime'
+import utc from 'dayjs/plugin/utc'
+import timezone from 'dayjs/plugin/timezone'
+import duration from 'dayjs/plugin/duration'
+
+dayjs.extend(relativeTime)
+dayjs.extend(utc)
+dayjs.extend(timezone)
+dayjs.extend(duration)
+
+/**
+ * Format timestamp to relative time string (e.g. '2 minutes ago').
+ * Handles missing 'Z' suffix for UTC.
+ */
+export function formatRelativeTime(dateStr?: string | null): string {
+  if (!dateStr) return '—'
+  const d = dateStr.endsWith('Z') ? dateStr : `${dateStr}Z`
+  return dayjs(d).fromNow()
 }
 
-export function formatDuration(startIso: string, endIso: string): string {
-  const startUtc = startIso.endsWith('Z') ? startIso : startIso + 'Z'
-  const endUtc = endIso.endsWith('Z') ? endIso : endIso + 'Z'
-  const ms = new Date(endUtc).getTime() - new Date(startUtc).getTime()
+/**
+ * Format timestamp to a human-readable exact time (e.g. 'Apr 5, 2026, 15:14:56').
+ */
+export function formatExactTime(dateStr?: string | null): string {
+  if (!dateStr) return '—'
+  const d = dateStr.endsWith('Z') ? dateStr : `${dateStr}Z`
+  return dayjs(d).format('MMM D, YYYY, HH:mm:ss')
+}
+
+/**
+ * Calculate and format duration between two timestamps.
+ */
+export function formatDuration(startStr?: string | null, endStr?: string | null): string {
+  if (!startStr || !endStr) return '—'
+  const s = dayjs(startStr.endsWith('Z') ? startStr : `${startStr}Z`)
+  const e = dayjs(endStr.endsWith('Z') ? endStr : `${endStr}Z`)
+  const ms = e.diff(s)
+  return formatMs(ms)
+}
+
+/**
+ * Format milliseconds into human readable string.
+ */
+export function formatMs(ms: number): string {
+  if (ms < 0) return '0ms'
   if (ms < 1000) return `${ms}ms`
-  if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`
-  return `${Math.floor(ms / 60000)}m ${Math.floor((ms % 60000) / 1000)}s`
+  const sec = (ms / 1000).toFixed(1)
+  if (parseFloat(sec) < 60) return `${sec}s`
+  const min = (ms / 60000).toFixed(1)
+  return `${min}m`
 }
 
-export function formatMs(ms: number | null): string {
-  if (ms === null) return '—'
-  if (ms < 1000) return `${ms}ms`
-  return `${(ms / 1000).toFixed(2)}s`
+/**
+ * Create a short preview of input data.
+ */
+export function inputPreview(data?: Record<string, unknown> | null): string {
+  if (!data) return 'No input'
+  const text = data.text || data.url || data.file_path || JSON.stringify(data)
+  const str = String(text)
+  return str.length > 100 ? `${str.slice(0, 100)}...` : str
 }
 
-export function truncate(str: string, len = 60): string {
-  if (str.length <= len) return str
-  return str.slice(0, len) + '…'
-}
-
-export function inputPreview(inputData: Record<string, unknown>): string {
-  if (typeof inputData.text === 'string') return truncate(inputData.text)
-  if (typeof inputData.url === 'string') return truncate(inputData.url as string)
-  if (typeof inputData.file_path === 'string') return inputData.file_path as string
-  return JSON.stringify(inputData).slice(0, 60)
-}
-
+/**
+ * Map ISO language codes to human names.
+ */
 export function languageName(code: string): string {
-  try {
-    return new Intl.DisplayNames(['en'], { type: 'language' }).of(code) ?? code
-  } catch {
-    return code
+  const names: Record<string, string> = {
+    en: 'English',
+    es: 'Spanish',
+    fr: 'French',
+    de: 'German',
+    it: 'Italian',
+    pt: 'Portuguese',
+    ru: 'Russian',
+    zh: 'Chinese',
+    ja: 'Japanese',
+    ko: 'Korean',
   }
+  return names[code.toLowerCase()] || code.toUpperCase()
 }

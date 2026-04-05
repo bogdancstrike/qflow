@@ -2,10 +2,10 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  Space, Typography, Descriptions, Button, Popconfirm, Alert, Collapse,
-  Tag, Spin, Result, Skeleton, Card, theme,
+  Space, Typography, Descriptions, Button, Popconfirm, Alert,
+  Tag, Spin, Result, Skeleton, Card, theme, Collapse, Tooltip, Row, Col, Divider,
 } from 'antd'
-import { DeleteOutlined, ReloadOutlined, ArrowLeftOutlined } from '@ant-design/icons'
+import { DeleteOutlined, ReloadOutlined, ArrowLeftOutlined, ClockCircleOutlined, ThunderboltOutlined } from '@ant-design/icons'
 import { tasksApi } from '@/api/tasks'
 import { useTaskPolling } from '@/hooks/useTaskPolling'
 import { TaskStatusBadge } from '@/components/shared/TaskStatusBadge'
@@ -13,7 +13,7 @@ import { CopyButton } from '@/components/shared/CopyButton'
 import { OutputViewer } from '@/components/task/OutputViewer'
 import { DagGraph } from '@/components/dag/DagGraph'
 import { StepLogTable } from '@/components/logs/StepLogTable'
-import { formatRelativeTime, formatDuration, inputPreview } from '@/lib/formatters'
+import { formatRelativeTime, formatDuration, inputPreview, formatExactTime } from '@/lib/formatters'
 
 const { Title, Text } = Typography
 
@@ -91,26 +91,74 @@ export function TaskDetailPage() {
           <Descriptions.Item label="Input Type">
             <Tag color="blue" variant="filled" style={{ fontWeight: 600 }}>{task.input_type.toUpperCase()}</Tag>
           </Descriptions.Item>
-          <Descriptions.Item label="Created">
-            <Text style={{ color: token.colorTextHeading }}>{formatRelativeTime(task.created_at)}</Text>
-          </Descriptions.Item>
-          <Descriptions.Item label="Duration">
-            <Text strong style={{ color: token.colorTextHeading }}>
-              {task.status === 'COMPLETED' || task.status === 'FAILED'
-                ? formatDuration(task.created_at, task.updated_at)
-                : '—'}
-            </Text>
-          </Descriptions.Item>
           <Descriptions.Item label="Retry Count">
             <Text style={{ color: token.colorTextHeading }}>{task.retry_count}</Text>
           </Descriptions.Item>
-          <Descriptions.Item label="Full ID">
+          
+          <Descriptions.Item label="Enqueued (Created)">
+            <Tooltip title={formatExactTime(task.created_at)}>
+              <Text style={{ color: token.colorTextHeading }}>{formatRelativeTime(task.created_at)}</Text>
+            </Tooltip>
+          </Descriptions.Item>
+          <Descriptions.Item label="Picked up (Started)">
+            <Tooltip title={formatExactTime(task.started_at)}>
+              <Text style={{ color: token.colorTextHeading }}>{formatRelativeTime(task.started_at)}</Text>
+            </Tooltip>
+          </Descriptions.Item>
+          <Descriptions.Item label="Last Update">
+            <Tooltip title={formatExactTime(task.updated_at)}>
+              <Text style={{ color: token.colorTextHeading }}>{formatRelativeTime(task.updated_at)}</Text>
+            </Tooltip>
+          </Descriptions.Item>
+
+          <Descriptions.Item label="Full ID" span={3}>
              <Space size={4}>
               <Text code style={{ fontSize: 11 }}>{task.id}</Text>
               <CopyButton text={task.id} />
             </Space>
           </Descriptions.Item>
         </Descriptions>
+
+        {/* Latency Breakdown Bar */}
+        <div style={{ marginTop: 24, padding: '16px 20px', background: token.colorFillAlter, borderRadius: 8, border: `1px solid ${token.colorBorderSecondary}` }}>
+           <Row gutter={48}>
+             <Col>
+               <Space direction="vertical" size={2}>
+                 <Text type="secondary" style={{ fontSize: 11, letterSpacing: '0.05em' }}>
+                    <ClockCircleOutlined /> QUEUE WAIT
+                 </Text>
+                 <Text strong style={{ fontSize: 16 }}>
+                    {task.started_at ? formatDuration(task.created_at, task.started_at) : '—'}
+                 </Text>
+               </Space>
+             </Col>
+             <Col>
+               <Space direction="vertical" size={2}>
+                 <Text type="secondary" style={{ fontSize: 11, letterSpacing: '0.05em' }}>
+                    <ThunderboltOutlined /> EXECUTION
+                 </Text>
+                 <Text strong style={{ fontSize: 16 }}>
+                    {task.started_at && (task.status === 'COMPLETED' || task.status === 'FAILED')
+                      ? formatDuration(task.started_at, task.updated_at)
+                      : task.started_at ? 'Running...' : '—'}
+                 </Text>
+               </Space>
+             </Col>
+             <Divider type="vertical" style={{ height: 40 }} />
+             <Col>
+               <Space direction="vertical" size={2}>
+                 <Text type="secondary" style={{ fontSize: 11, letterSpacing: '0.05em' }}>
+                    TOTAL END-TO-END
+                 </Text>
+                 <Text strong style={{ fontSize: 16, color: token.colorPrimary }}>
+                    {task.status === 'COMPLETED' || task.status === 'FAILED'
+                      ? formatDuration(task.created_at, task.updated_at)
+                      : '—'}
+                 </Text>
+               </Space>
+             </Col>
+           </Row>
+        </div>
         
         <div style={{ marginTop: 24, paddingTop: 24, borderTop: `1px solid ${token.colorBorderSecondary}` }}>
            <Space direction="vertical" size={12} style={{ width: '100%' }}>

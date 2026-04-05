@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, String, Integer, DateTime, JSON, create_engine, func
+from sqlalchemy import Column, String, Integer, DateTime, JSON, create_engine, func, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 from src.config import Config
@@ -25,6 +25,7 @@ class Task(Base):
     error = Column(JSON, nullable=True)
     retry_count = Column(Integer, nullable=False, default=0)
     created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), index=True)
+    started_at = Column(DateTime, nullable=True, index=True) # When task was picked up by a worker
     updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     def to_dict(self):
@@ -42,6 +43,7 @@ class Task(Base):
             "error": self.error,
             "retry_count": self.retry_count,
             "created_at": self.created_at.isoformat() if self.created_at else None,
+            "started_at": self.started_at.isoformat() if self.started_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
 
@@ -74,4 +76,26 @@ def get_session():
 
 
 def init_db():
-    Base.metadata.create_all(get_engine())
+    # Import TaskStepLog here to ensure it's registered with Base before create_all
+    from src.models.task_step_log import TaskStepLog
+    engine = get_engine()
+    Base.metadata.create_all(engine)
+
+    # Automatic schema migration for new columns (create_all doesn't add columns to existing tables)
+    with engine.connect() as conn:
+        try:
+            # Check if started_at exists in tasks
+            conn.execute(text("SELECT started_at FROM tasks LIMIT 1"))
+        except Exception:
+            conn.rollback()
+            try:
+                # Add started_at column if missing
+                conn.execute(text("ALTER TABLE tasks ADD COLUMN started_at TIMESTAMP WITHOUT TIME ZONE"))
+                conn.execute(text("CREATE INDEX ix_tasks_started_at ON tasks (started_at)"))
+                conn.commit()
+                from framework.commons.logger import logger
+                logger.info("[AI-FLOW] Migrated database: added started_at to tasks table")
+            except Exception as e:
+                conn.rollback()
+                from framework.commons.logger import logger
+                logger.warning(f"[AI-FLOW] Migration failed: {e}")

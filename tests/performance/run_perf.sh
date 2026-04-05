@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Configuration
-TOTAL_TASKS=200
-BATCH_SIZE=20
+TOTAL_TASKS=1000
+BATCH_SIZE=200
 API_URL="http://localhost:3001/api/v1/tasks"
 
 echo "Starting performance test: Submitting $TOTAL_TASKS tasks in batches of $BATCH_SIZE..."

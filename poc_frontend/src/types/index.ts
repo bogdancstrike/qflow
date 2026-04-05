@@ -51,6 +51,7 @@ export interface Task {
   error: Record<string, unknown> | null
   retry_count: number
   created_at: string
+  started_at: string | null
   updated_at: string
 }
 
@@ -135,14 +136,22 @@ export interface DashboardStats {
   total: number
   byStatus: Record<TaskStatus, number>
   byInputType: Record<string, number>
+  byOutputRequested: Record<string, number>
   successRate: number
   avgDurationMs: number
+  avgProcessingMs: number
+  avgQueueMs: number
   inputSuccessRate: { type: string; rate: number }[]
   durationByInputType: { type: string; avgMs: number }[]
-  timeSeriesLast7d: { date: string; status: TaskStatus; count: number }[]
+  minutely_volume_1h: { time: string; status: TaskStatus; count: number }[]
   hourly_volume_24h: { time: string; status: TaskStatus; count: number }[]
   daily_volume_30d: { time: string; status: TaskStatus; count: number }[]
   weekly_volume_12w: { time: string; status: TaskStatus; count: number }[]
+  queue_latency_24h: { time: string; avgMs: number }[]
   concurrency_24h: { time: string; count: number }[]
+  concurrency_1h: { time: string; count: number }[]
+  tpm_current: number
+  tpm_avg_15m: number
+  node_latency_stats: { node: string; avgMs: number; count: number; failureRate: number }[]
   recentTasks?: Task[]
 }

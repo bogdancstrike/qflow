@@ -135,6 +135,27 @@ def get_global_stats() -> dict:
         type_counts = session.query(Task.input_type, func.count(Task.id)).group_by(Task.input_type).all()
         by_input_type = {t: count for t, count in type_counts}
 
+        # 2a. Output Type Distribution (Unnesting JSON array)
+        by_output_requested = {}
+        # Try standard JSON first as it's defined in the model (SQLAlchemy JSON -> PG json)
+        try:
+            output_counts = session.execute(text(
+                "SELECT output_val, count(*) FROM tasks, json_array_elements_text(outputs::json) AS output_val GROUP BY output_val"
+            )).all()
+            by_output_requested = {row[0]: int(row[1]) for row in output_counts}
+        except Exception:
+            session.rollback()
+            # Try JSONB as fallback
+            try:
+                output_counts = session.execute(text(
+                    "SELECT output_val, count(*) FROM tasks, jsonb_array_elements_text(outputs::jsonb) AS output_val GROUP BY output_val"
+                )).all()
+                by_output_requested = {row[0]: int(row[1]) for row in output_counts}
+            except Exception:
+                session.rollback()
+                # If both fail (e.g. no data yet or wrong version), we stay silent and return empty
+                pass
+
         # 3. Success rate (overall)
         completed = by_status.get("COMPLETED", 0)
         failed = by_status.get("FAILED", 0)
@@ -142,12 +163,23 @@ def get_global_stats() -> dict:
         success_rate = round((completed / finished * 100), 1) if finished > 0 else 0
 
         # 4. Latency stats (completed only)
-        avg_latency_raw = session.query(
-            func.avg(
-                func.extract('epoch', Task.updated_at) - func.extract('epoch', Task.created_at)
-            )
+        # End-to-end latency: updated_at - created_at
+        e2e_latency_raw = session.query(
+            func.avg(func.extract('epoch', Task.updated_at) - func.extract('epoch', Task.created_at))
         ).filter(Task.status == 'COMPLETED').scalar()
-        avg_latency = float(avg_latency_raw) if avg_latency_raw is not None else 0.0
+        e2e_latency = float(e2e_latency_raw) if e2e_latency_raw is not None else 0.0
+
+        # Processing Speed (per task): updated_at - started_at
+        proc_latency_raw = session.query(
+            func.avg(func.extract('epoch', Task.updated_at) - func.extract('epoch', Task.started_at))
+        ).filter(Task.status == 'COMPLETED', Task.started_at.isnot(None)).scalar()
+        proc_latency = float(proc_latency_raw) if proc_latency_raw is not None else 0.0
+
+        # Queue Latency: started_at - created_at
+        queue_latency_raw = session.query(
+            func.avg(func.extract('epoch', Task.started_at) - func.extract('epoch', Task.created_at))
+        ).filter(Task.started_at.isnot(None)).scalar()
+        queue_latency = float(queue_latency_raw) if queue_latency_raw is not None else 0.0
         
         # 5. Success rate by input type
         success_by_type = session.query(
@@ -180,7 +212,20 @@ def get_global_stats() -> dict:
 
         now = datetime.now(timezone.utc)
 
-        # 7. Last 24 hours throughput (Hourly)
+        # 7. Volume Stats (Hourly/Daily/Weekly)
+        # 7a. Last 60 minutes throughput (Minutely)
+        start_1h = now - timedelta(hours=1)
+        minutely_stats = session.query(
+            func.to_char(Task.created_at, 'HH24:MI').label('minute'),
+            Task.status,
+            func.count(Task.id)
+        ).filter(Task.created_at >= start_1h).group_by('minute', Task.status).all()
+        
+        minutely_volume_1h = []
+        for min_val, status, count in minutely_stats:
+            minutely_volume_1h.append({"time": min_val, "status": status, "count": int(count)})
+
+        # 7b. Last 24 hours throughput (Hourly)
         start_24h = now - timedelta(hours=24)
         hourly_stats = session.query(
             func.to_char(Task.created_at, 'YYYY-MM-DD HH24:00').label('hour'),
@@ -191,6 +236,16 @@ def get_global_stats() -> dict:
         hourly_volume_24h = []
         for hr, status, count in hourly_stats:
             hourly_volume_24h.append({"time": hr, "status": status, "count": int(count)})
+
+        # 7c. Queue Latency Trend (Hourly for last 24h)
+        queue_latency_trend = session.query(
+            func.to_char(Task.created_at, 'YYYY-MM-DD HH24:00').label('hour'),
+            func.avg(func.extract('epoch', Task.started_at) - func.extract('epoch', Task.created_at))
+        ).filter(Task.created_at >= start_24h, Task.started_at.isnot(None)).group_by('hour').all()
+
+        queue_latency_24h = []
+        for hr, avg in queue_latency_trend:
+            queue_latency_24h.append({"time": hr, "avgMs": int(float(avg) * 1000) if avg else 0})
 
         # 8. Last 30 days throughput (Daily)
         start_30d = (now - timedelta(days=30)).replace(hour=0, minute=0, second=0, microsecond=0)
@@ -216,28 +271,65 @@ def get_global_stats() -> dict:
         for week, status, count in weekly_stats:
             weekly_volume_12w.append({"time": week, "status": status, "count": int(count)})
 
-        # 10. Concurrency (active in last 24h)
+        # 10. Concurrency (active in last 24h & last 1h)
         concurrency_24h = []
         active_per_hour = {}
         for hr, status, count in hourly_stats:
             if status in ["PENDING", "RUNNING"]:
                 active_per_hour[hr] = active_per_hour.get(hr, 0) + int(count)
-        
         for hr in sorted(active_per_hour.keys()):
             concurrency_24h.append({"time": hr, "count": active_per_hour[hr]})
+
+        concurrency_1h = []
+        active_per_min = {}
+        for min_val, status, count in minutely_stats:
+            if status in ["PENDING", "RUNNING"]:
+                active_per_min[min_val] = active_per_min.get(min_val, 0) + int(count)
+        for min_val in sorted(active_per_min.keys()):
+            concurrency_1h.append({"time": min_val, "count": active_per_min[min_val]})
+
+        # 11. TPM (Tasks Per Minute) - Relatable Metrics
+        tpm_current_raw = session.query(func.count(Task.id)).filter(Task.created_at >= now - timedelta(minutes=1)).scalar() or 0
+        tpm_15m_avg_raw = session.query(func.count(Task.id)).filter(Task.created_at >= now - timedelta(minutes=15)).scalar() or 0
+        
+        # 12. Node Latency Analysis (Heatmap data)
+        node_stats = session.query(
+            TaskStepLog.task_ref,
+            func.avg(TaskStepLog.duration_ms),
+            func.count(TaskStepLog.id),
+            func.sum(text("CASE WHEN status = 'FAILED' THEN 1 ELSE 0 END"))
+        ).filter(TaskStepLog.created_at >= now - timedelta(hours=24)).group_by(TaskStepLog.task_ref).all()
+        
+        node_latency_stats = []
+        for ref, avg, count, fails in node_stats:
+            node_latency_stats.append({
+                "node": ref,
+                "avgMs": int(float(avg)) if avg else 0,
+                "count": int(count),
+                "failureRate": round((float(fails) / count * 100), 1) if count > 0 else 0
+            })
 
         return {
             "total": int(total),
             "byStatus": by_status,
             "byInputType": by_input_type,
+            "byOutputRequested": by_output_requested,
             "successRate": success_rate,
-            "avgDurationMs": int(avg_latency * 1000),
+            "avgDurationMs": int(e2e_latency * 1000),
+            "avgProcessingMs": int(proc_latency * 1000),
+            "avgQueueMs": int(queue_latency * 1000),
             "inputSuccessRate": input_success_rate,
             "durationByInputType": duration_by_input_type,
+            "minutely_volume_1h": minutely_volume_1h,
             "hourly_volume_24h": hourly_volume_24h,
             "daily_volume_30d": daily_volume_30d,
             "weekly_volume_12w": weekly_volume_12w,
+            "queue_latency_24h": queue_latency_24h,
             "concurrency_24h": concurrency_24h,
+            "concurrency_1h": concurrency_1h,
+            "tpm_current": int(tpm_current_raw),
+            "tpm_avg_15m": round(float(tpm_15m_avg_raw) / 15.0, 1),
+            "node_latency_stats": node_latency_stats,
         }
     finally:
         session.close()
@@ -272,6 +364,10 @@ def update_task_status(task_id: str, status: str, current_step: str = None,
         if task is None:
             logger.warning(f"[TASK_SERVICE] Task {task_id} not found for update")
             return
+
+        # If transitioning to RUNNING, set started_at
+        if status == "RUNNING" and task.status == "PENDING" and task.started_at is None:
+            task.started_at = datetime.now(timezone.utc)
 
         task.status = status
         # updated_at will be auto-updated by SQLAlchemy Column onupdate
