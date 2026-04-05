@@ -2,20 +2,20 @@
 
 Starts both the ETL (Kafka consumer) and the HTTP API in a single process
 using the QF Framework's FrameworkApp.
-
-The ETL worker consumes from flow.tasks.in and executes resolved pipelines.
-The HTTP API handles task creation, status queries, and management.
-
-Environment variables of interest
-----------------------------------
-  DEV_MODE=true              — mock all AI service HTTP calls (default: true)
-  ENABLE_TRACING=true        — enable OTel span export to Jaeger (default: false)
-  QSINT_OTLP_ENDPOINT       — OTLP gRPC endpoint, e.g. http://localhost:4317
-  KAFKA_BOOTSTRAP_SERVERS    — Kafka broker address (default: localhost:9094)
-  DATABASE_URL               — PostgreSQL connection string
-  API_PORT                   — HTTP listen port (default: 5000)
-  DRAIN_TIMEOUT_SEC          — graceful shutdown drain timeout (default: 30)
 """
+
+# GEVENT MONKEY PATCHING MUST BE FIRST
+try:
+    from gevent import monkey
+    monkey.patch_all()
+    # Try to patch psycopg2 if available
+    try:
+        import psycogreen.gevent
+        psycogreen.gevent.patch_psycopg()
+    except ImportError:
+        pass
+except ImportError:
+    pass
 
 import os
 import signal
@@ -31,9 +31,6 @@ sys.path.insert(0, str(BASE_DIR))
 from dotenv import load_dotenv
 load_dotenv()
 
-# Monkey-patch kafka-python OffsetAndMetadata to supply default leader_epoch.
-# The QF framework calls OffsetAndMetadata(offset, metadata) with 2 args, but
-# kafka-python 2.3.0 requires 3 (offset, metadata, leader_epoch).
 from collections import namedtuple as _nt
 import kafka.structs as _ks
 _ks.OffsetAndMetadata = _nt("OffsetAndMetadata", ["offset", "metadata", "leader_epoch"], defaults=[0])
@@ -47,7 +44,6 @@ from framework.commons.logger import logger
 # ---------------------------------------------------------------------------
 
 _shutdown_event = threading.Event()
-_active_greenlets = []  # tracked for drain-then-kill
 DRAIN_TIMEOUT = int(os.getenv("DRAIN_TIMEOUT_SEC", "30"))
 
 
@@ -59,43 +55,14 @@ def _signal_handler(signum, frame):
 
 
 def _graceful_shutdown(fw: FrameworkApp):
-    """Execute the shutdown sequence:
-    1. Stop accepting new Kafka messages
-    2. Drain in-flight tasks (with timeout)
-    3. Force-cancel remaining greenlets
-    4. Close connections
-    """
+    """Execute the shutdown sequence."""
     logger.info("[SHUTDOWN] Phase 1: Stopping Kafka consumer...")
-    # The ETL thread is daemon — it will be interrupted when the main process exits.
-    # But we try to signal it to stop first.
     try:
         fw.shutdown()
     except Exception as e:
         logger.warning(f"[SHUTDOWN] Framework shutdown call: {e}")
 
-    logger.info(f"[SHUTDOWN] Phase 2: Draining in-flight tasks (timeout={DRAIN_TIMEOUT}s)...")
-    deadline = time.time() + DRAIN_TIMEOUT
-
-    # Wait for active greenlets to finish
-    try:
-        import gevent
-        while _active_greenlets and time.time() < deadline:
-            remaining = [g for g in _active_greenlets if not g.dead]
-            if not remaining:
-                break
-            _active_greenlets[:] = remaining
-            gevent.sleep(0.5)
-
-        # Force-kill remaining
-        remaining = [g for g in _active_greenlets if not g.dead]
-        if remaining:
-            logger.warning(f"[SHUTDOWN] Phase 3: Force-killing {len(remaining)} greenlet(s)")
-            for g in remaining:
-                g.kill(block=False)
-    except ImportError:
-        pass
-
-    logger.info("[SHUTDOWN] Phase 4: Closing database connections...")
+    logger.info("[SHUTDOWN] Phase 2: Closing database connections...")
     try:
         from src.models.task import get_engine
         engine = get_engine()

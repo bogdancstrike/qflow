@@ -1,6 +1,7 @@
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Row, Col, Card, Table, Tag, Space, Typography, Spin, Alert, Button, Divider, Tooltip, Tabs, theme,
+  Row, Col, Card, Table, Tag, Space, Typography, Spin, Alert, Button, Divider, Tooltip, Tabs, theme, Segmented,
 } from 'antd'
 import {
   InfoCircleOutlined,
@@ -42,18 +43,16 @@ function AnalysisCard({
     <Card variant="borderless" loading={loading} styles={{ body: { padding: '20px 24px 8px' } }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <Text style={{ fontSize: 14, color: token.colorTextSecondary }}>{title}</Text>
-        <Tooltip title="Task stats information">
+        <Tooltip title="Real-time global statistic">
           <InfoCircleOutlined style={{ color: token.colorTextDescription }} />
         </Tooltip>
       </div>
       <div style={{ margin: '4px 0 12px' }}>
         <Text style={{ fontSize: 30, color: token.colorTextHeading, fontWeight: 600 }}>
-          {value}{suffix}
+          {typeof value === 'number' ? value.toLocaleString() : value}{suffix}
         </Text>
       </div>
-      <div style={{ height: 16 }}>
-        {/* Vertical spacing consistency */}
-      </div>
+      <div style={{ height: 16 }}></div>
       <Divider style={{ margin: '8px 0' }} />
       <div style={{ padding: '8px 0', fontSize: 14, color: token.colorTextSecondary }}>
         {footer}
@@ -129,8 +128,16 @@ export function DashboardPage() {
   const { data: stats, isLoading, error } = useDashboardStats()
   const navigate = useNavigate()
   const { token } = theme.useToken()
+  const [volumeGranularity, setVolumeGranularity] = useState<'hour' | 'day' | 'week'>('day')
 
   if (error) return <Alert type="error" message={error.message} />
+
+  const volumeData = useMemo(() => {
+    if (!stats) return []
+    if (volumeGranularity === 'hour') return stats.hourly_volume_24h
+    if (volumeGranularity === 'week') return stats.weekly_volume_12w
+    return stats.daily_volume_30d
+  }, [stats, volumeGranularity])
 
   const pieConfig: PieConfig = {
     data: stats ? Object.entries(stats.byStatus).filter(([, v]) => v > 0).map(([status, value]) => ({ status, value })) : [],
@@ -144,7 +151,7 @@ export function DashboardPage() {
     annotations: stats ? [{
       type: 'text',
       style: {
-        text: `${stats.total}`,
+        text: `${stats.total.toLocaleString()}`,
         x: '50%',
         y: '48%',
         textAlign: 'center',
@@ -155,7 +162,7 @@ export function DashboardPage() {
     }, {
       type: 'text',
       style: {
-        text: 'Total Tasks',
+        text: 'Total Jobs',
         x: '50%',
         y: '62%',
         textAlign: 'center',
@@ -165,43 +172,36 @@ export function DashboardPage() {
     }] : [],
   }
 
-  const dailyThroughputConfig: ColumnConfig = {
-    data: stats?.timeSeriesLast7d ?? [],
-    xField: 'date',
+  const volumeConfig: ColumnConfig = {
+    data: volumeData,
+    xField: 'time',
     yField: 'count',
     colorField: 'status',
     stack: true,
     scale: { color: { range: Object.values(STATUS_PIE_COLORS) } },
     axis: { 
-      x: { label: { autoRotate: true, style: { fill: token.colorTextSecondary } } },
+      x: { label: { autoRotate: true, style: { fill: token.colorTextSecondary, fontSize: 10 } } },
       y: { label: { style: { fill: token.colorTextSecondary } } }
     },
     legend: { color: { position: 'top', layout: { justifyContent: 'flex-end' } } },
   }
 
-  const hourlyVolumeConfig: ColumnConfig = {
-    data: stats?.hourlyVolume24h ?? [],
-    xField: 'hour',
-    yField: 'count',
-    colorField: 'status',
-    stack: true,
-    scale: { color: { range: Object.values(STATUS_PIE_COLORS) } },
-    axis: { 
-      x: { label: { style: { fill: token.colorTextSecondary, fontSize: 10 } } },
-      y: { label: { style: { fill: token.colorTextSecondary } } }
-    },
-    legend: false,
-  }
-
   const concurrencyConfig: AreaConfig = {
-    data: stats?.concurrencyPeak24h ?? [],
+    data: stats?.concurrency_24h ?? [],
     xField: 'time',
     yField: 'count',
-    smooth: true,
-    color: token.colorPrimary,
-    areaStyle: { fill: `l(270) 0:#ffffff 0.5:${token.colorPrimary} 1:${token.colorPrimary}` },
+    style: {
+      fill: token.colorPrimary,
+      fillOpacity: 0.2,
+    },
+    line: {
+      style: {
+        stroke: token.colorPrimary,
+        lineWidth: 2,
+      },
+    },
     axis: { 
-      x: { label: { style: { fill: token.colorTextSecondary, fontSize: 10 } } },
+      x: { label: { style: { fill: token.colorTextSecondary, fontSize: 10 }, autoRotate: true } },
       y: { title: { text: 'Active Tasks', style: { fill: token.colorTextSecondary } }, label: { style: { fill: token.colorTextSecondary } } }
     },
   }
@@ -246,10 +246,10 @@ export function DashboardPage() {
       <Row gutter={[20, 20]}>
         <Col xs={24} sm={12} lg={6}>
           <AnalysisCard
-            title="Aggregated Orchestrations"
+            title="Total Orchestrated"
             value={stats?.total ?? 0}
             loading={isLoading}
-            footer={<Space><Text type="secondary">System Capacity:</Text><Text strong style={{ color: token.colorTextHeading }}>99.9%</Text></Space>}
+            footer={<Space><Text type="secondary">DB Records:</Text><Text strong style={{ color: token.colorTextHeading }}>{stats?.total.toLocaleString()}</Text></Space>}
           />
         </Col>
         <Col xs={24} sm={12} lg={6}>
@@ -258,7 +258,7 @@ export function DashboardPage() {
             value={stats?.successRate ?? 0}
             suffix="%"
             loading={isLoading}
-            footer={<Space><Text type="secondary">Failed Jobs:</Text><Text strong style={{ color: token.colorError }}>{stats?.byStatus.FAILED ?? 0}</Text></Space>}
+            footer={<Space><Text type="secondary">Completed:</Text><Text strong style={{ color: token.colorSuccess }}>{stats?.byStatus.COMPLETED.toLocaleString()}</Text></Space>}
           />
         </Col>
         <Col xs={24} sm={12} lg={6}>
@@ -266,21 +266,21 @@ export function DashboardPage() {
             title="Mean Pipeline Latency"
             value={formatMs(stats?.avgDurationMs ?? 0)}
             loading={isLoading}
-            footer={<Space><Text type="secondary">P95 Tail:</Text><Text strong style={{ color: token.colorTextHeading }}>{formatMs(stats?.p95DurationMs ?? 0)}</Text></Space>}
+            footer={<Space><Text type="secondary">Avg Execution Time</Text></Space>}
           />
         </Col>
         <Col xs={24} sm={12} lg={6}>
           <AnalysisCard
-            title="Concurrent Workload"
+            title="Current Active Jobs"
             value={(stats?.byStatus.PENDING ?? 0) + (stats?.byStatus.RUNNING ?? 0)}
             loading={isLoading}
-            footer={<Space><Text type="secondary">Pending Queue:</Text><Text strong style={{ color: token.colorWarning }}>{stats?.byStatus.PENDING ?? 0}</Text></Space>}
+            footer={<Space><Text type="secondary">Pending Queue:</Text><Text strong style={{ color: token.colorWarning }}>{stats?.byStatus.PENDING.toLocaleString()}</Text></Space>}
           />
         </Col>
       </Row>
 
       {/* Analytics Tabs */}
-      <Card variant="borderless" styles={{ body: { padding: '8px 24px 24px' } }}>
+      <Card variant="borderless" styles={{ body: { padding: '16px 24px 24px' } }}>
         <Tabs
           defaultActiveKey="1"
           size="large"
@@ -289,48 +289,61 @@ export function DashboardPage() {
               key: '1',
               label: <Space><HistoryOutlined /> Volume & Trends</Space>,
               children: (
-                <Row gutter={[40, 24]}>
-                  <Col span={16}>
-                    <Title level={5} style={{ marginBottom: 20, color: token.colorTextHeading }}>Throughput Analysis (7 Days)</Title>
-                    {isLoading ? <Spin /> : <Column {...dailyThroughputConfig} height={350} />}
-                  </Col>
-                  <Col span={8}>
-                    <Title level={5} style={{ marginBottom: 20, color: token.colorTextHeading }}>State Distribution</Title>
-                    {isLoading ? <Spin /> : <Pie {...pieConfig} height={350} />}
-                  </Col>
-                </Row>
+                <div style={{ marginTop: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                    <Title level={5} style={{ margin: 0, color: token.colorTextHeading }}>Throughput Analysis</Title>
+                    <Segmented
+                      value={volumeGranularity}
+                      onChange={(v) => setVolumeGranularity(v as any)}
+                      options={[
+                        { label: 'Hourly', value: 'hour' },
+                        { label: 'Daily', value: 'day' },
+                        { label: 'Weekly', value: 'week' },
+                      ]}
+                    />
+                  </div>
+                  <Row gutter={[40, 24]}>
+                    <Col span={16}>
+                      {isLoading ? <Spin /> : <Column {...volumeConfig} height={350} />}
+                    </Col>
+                    <Col span={8}>
+                      <Title level={5} style={{ marginBottom: 20, textAlign: 'center', color: token.colorTextHeading }}>Status Distribution (Global)</Title>
+                      {isLoading ? <Spin /> : <Pie {...pieConfig} height={350} />}
+                    </Col>
+                  </Row>
+                </div>
               ),
             },
             {
               key: '2',
               label: <Space><AreaChartOutlined /> Temporal Analysis</Space>,
               children: (
-                <Row gutter={[40, 24]}>
-                  <Col span={12}>
-                    <Title level={5} style={{ marginBottom: 20, color: token.colorTextHeading }}>Hourly Throughput (24h)</Title>
-                    {isLoading ? <Spin /> : <Column {...hourlyVolumeConfig} height={300} />}
-                  </Col>
-                  <Col span={12}>
-                    <Title level={5} style={{ marginBottom: 20, color: token.colorTextHeading }}>System Load (Concurrency)</Title>
-                    {isLoading ? <Spin /> : <Area {...concurrencyConfig} height={300} />}
-                  </Col>
-                </Row>
+                <div style={{ marginTop: 16 }}>
+                  <Row gutter={[40, 24]}>
+                    <Col span={24}>
+                      <Title level={5} style={{ marginBottom: 20, color: token.colorTextHeading }}>System Load (Active Tasks in Last 24h)</Title>
+                      {isLoading ? <Spin /> : <Area {...concurrencyConfig} height={300} />}
+                    </Col>
+                  </Row>
+                </div>
               ),
             },
             {
               key: '3',
               label: <Space><ThunderboltOutlined /> Performance Analysis</Space>,
               children: (
-                <Row gutter={[40, 24]}>
-                  <Col span={12}>
-                    <Title level={5} style={{ marginBottom: 20, color: token.colorTextHeading }}>Latency by Input Channel</Title>
-                    {isLoading ? <Spin /> : <Bar {...durationConfig} height={300} />}
-                  </Col>
-                  <Col span={12}>
-                    <Title level={5} style={{ marginBottom: 20, color: token.colorTextHeading }}>Reliability by Input Type</Title>
-                    {isLoading ? <Spin /> : <Bar {...successRateConfig} height={300} />}
-                  </Col>
-                </Row>
+                <div style={{ marginTop: 16 }}>
+                  <Row gutter={[40, 24]}>
+                    <Col span={12}>
+                      <Title level={5} style={{ marginBottom: 20, color: token.colorTextHeading }}>Latency by Input Channel</Title>
+                      {isLoading ? <Spin /> : <Bar {...durationConfig} height={300} />}
+                    </Col>
+                    <Col span={12}>
+                      <Title level={5} style={{ marginBottom: 20, color: token.colorTextHeading }}>Reliability by Input Type</Title>
+                      {isLoading ? <Spin /> : <Bar {...successRateConfig} height={300} />}
+                    </Col>
+                  </Row>
+                </div>
               ),
             },
           ]}

@@ -20,7 +20,7 @@ from src.config import Config
 from src.api.validators import validate_task_input
 from src.services.task_service import (
     create_task, get_task, list_tasks, delete_task,
-    get_task_step_logs, update_task_status,
+    get_task_step_logs, update_task_status, get_global_stats,
 )
 from src.dag.catalogue import get_all_valid_output_types
 from src.api.rate_limiter import check_rate_limit
@@ -206,6 +206,18 @@ def flow_strategies(app, operation, request, **kwargs):
     }
 
 
+def flow_stats_handler(app, operation, request, **kwargs):
+    """GET /api/v1/stats — Global dashboard statistics."""
+    stats = get_global_stats()
+    # Explicitly set headers to prevent any intermediate caching
+    headers = {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0"
+    }
+    return stats, 200, headers
+
+
 # ---------------------------------------------------------------------------
 # Internal implementations
 # ---------------------------------------------------------------------------
@@ -319,12 +331,12 @@ def _publish_to_kafka(task: dict, input_data: dict):
 
 
 def _task_list():
-    """List tasks with cursor-based pagination."""
+    """List tasks with page-based pagination."""
     with tracer.start_as_current_span("api.task_list") as span:
         status = flask_request.args.get("status")
         input_type = flask_request.args.get("input_type")
-        cursor = flask_request.args.get("cursor")
-        limit = int(flask_request.args.get("limit", 50))
+        page = int(flask_request.args.get("page", 1))
+        size = int(flask_request.args.get("size", 50))
         sort = flask_request.args.get("sort", "created_at:desc")
         created_after = flask_request.args.get("created_after")
         created_before = flask_request.args.get("created_before")
@@ -332,8 +344,8 @@ def _task_list():
         result = list_tasks(
             status=status,
             input_type=input_type,
-            limit=limit,
-            cursor=cursor,
+            page=page,
+            size=size,
             sort=sort,
             created_after=created_after,
             created_before=created_before,

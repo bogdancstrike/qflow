@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, String, Integer, DateTime, JSON, create_engine, event
+from sqlalchemy import Column, String, Integer, DateTime, JSON, create_engine, func
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 from src.config import Config
@@ -13,18 +13,18 @@ class Task(Base):
     __tablename__ = "tasks"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    input_type = Column(String(50), nullable=False)
+    input_type = Column(String(50), nullable=False, index=True)
     input_data = Column(JSON, nullable=False)
     outputs = Column(JSON, nullable=False)
     execution_plan = Column(JSON, nullable=False)
-    status = Column(String(20), nullable=False, default="PENDING")
+    status = Column(String(20), nullable=False, default="PENDING", index=True)
     current_step = Column(String(100), nullable=True)
     step_results = Column(JSON, nullable=True, default=dict)
     workflow_variables = Column(JSON, nullable=True, default=dict)
     final_output = Column(JSON, nullable=True)
     error = Column(JSON, nullable=True)
     retry_count = Column(Integer, nullable=False, default=0)
-    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), index=True)
     updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     def to_dict(self):
@@ -55,7 +55,13 @@ def get_engine():
     if _engine is None:
         kwargs = {"pool_pre_ping": True}
         if Config.DATABASE_URL.startswith("postgresql"):
-            kwargs.update({"pool_size": 10, "max_overflow": 20})
+            # Scale pool for performance testing
+            kwargs.update({
+                "pool_size": 20,
+                "max_overflow": 40,
+                "pool_timeout": 30,
+                "pool_recycle": 1800
+            })
         _engine = create_engine(Config.DATABASE_URL, **kwargs)
     return _engine
 

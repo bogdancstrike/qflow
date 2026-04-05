@@ -23,7 +23,7 @@ export interface FinalOutput {
   iptc_tags?: { tags: string[] }
   keywords?: { keywords: string[] }
   lang_meta?: { language: string; text: string }
-  text_en?: string
+  text_en?: { text: string }
 }
 
 export interface Branch {
@@ -56,7 +56,9 @@ export interface Task {
 
 export interface TaskListResponse {
   tasks: Task[]
-  next_cursor: string | null
+  total_count: number
+  page: number
+  size: number
   has_more: boolean
 }
 
@@ -121,8 +123,26 @@ export interface ListTasksParams {
   status?: TaskStatus
   input_type?: InputType
   limit?: number
+  page?: number
+  size?: number
   cursor?: string
   sort?: string
   created_after?: string
   created_before?: string
+}
+
+export interface DashboardStats {
+  total: number
+  byStatus: Record<TaskStatus, number>
+  byInputType: Record<string, number>
+  successRate: number
+  avgDurationMs: number
+  inputSuccessRate: { type: string; rate: number }[]
+  durationByInputType: { type: string; avgMs: number }[]
+  timeSeriesLast7d: { date: string; status: TaskStatus; count: number }[]
+  hourly_volume_24h: { time: string; status: TaskStatus; count: number }[]
+  daily_volume_30d: { time: string; status: TaskStatus; count: number }[]
+  weekly_volume_12w: { time: string; status: TaskStatus; count: number }[]
+  concurrency_24h: { time: string; count: number }[]
+  recentTasks?: Task[]
 }

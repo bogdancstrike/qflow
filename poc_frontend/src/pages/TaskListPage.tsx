@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { Dayjs } from 'dayjs'
 import {
   Table, Space, Button, Select, Segmented, DatePicker, Tag, Typography,
-  Popconfirm, message, Tooltip, Badge, Card, theme,
+  Popconfirm, message, Tooltip, Card, theme,
 } from 'antd'
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table'
 import type { FilterValue, SorterResult } from 'antd/es/table/interface'
@@ -33,7 +33,8 @@ interface Filters {
   inputType: InputType | ''
   dateRange: [Dayjs | null, Dayjs | null] | null
   sort: string
-  cursor: string | undefined
+  page: number
+  size: number
 }
 
 const DEFAULT_FILTERS: Filters = {
@@ -41,7 +42,8 @@ const DEFAULT_FILTERS: Filters = {
   inputType: '',
   dateRange: null,
   sort: 'created_at:desc',
-  cursor: undefined,
+  page: 1,
+  size: 10,
 }
 
 export function TaskListPage() {
@@ -61,8 +63,8 @@ export function TaskListPage() {
         ...(filters.dateRange?.[0] ? { created_after: filters.dateRange[0].toISOString() } : {}),
         ...(filters.dateRange?.[1] ? { created_before: filters.dateRange[1].toISOString() } : {}),
         sort: filters.sort,
-        cursor: filters.cursor,
-        limit: 50,
+        page: filters.page,
+        size: filters.size,
       }),
     staleTime: 5000,
   })
@@ -89,7 +91,7 @@ export function TaskListPage() {
   })
 
   const set = (patch: Partial<Filters>) =>
-    setFilters((f) => ({ ...f, ...patch, cursor: undefined }))
+    setFilters((f) => ({ ...f, ...patch }))
 
   const columns: ColumnsType<Task> = [
     {
@@ -107,6 +109,7 @@ export function TaskListPage() {
       title: 'Type',
       dataIndex: 'input_type',
       width: 110,
+      sorter: true,
       render: (v: string) => (
         <Tag color="blue" variant="filled" icon={INPUT_ICON[v] ?? null} style={{ fontSize: 11, fontWeight: 500 }}>
           {v.replace('_', ' ').toUpperCase()}
@@ -141,12 +144,14 @@ export function TaskListPage() {
       title: 'Status',
       dataIndex: 'status',
       width: 130,
+      sorter: true,
       render: (v: TaskStatus) => <TaskStatusBadge status={v} showDot />,
     },
     {
       title: 'Age',
       dataIndex: 'created_at',
       width: 100,
+      sorter: true,
       render: (v: string) => (
         <Text style={{ fontSize: 12, color: token.colorTextDescription }}>{formatRelativeTime(v)}</Text>
       ),
@@ -193,20 +198,18 @@ export function TaskListPage() {
   ]
 
   const handleTableChange = (
-    _: TablePaginationConfig,
-    tableFilters: Record<string, FilterValue | null>,
+    pagination: TablePaginationConfig,
+    _tableFilters: Record<string, FilterValue | null>,
     sorter: SorterResult<Task> | SorterResult<Task>[],
   ) => {
     const s = Array.isArray(sorter) ? sorter[0] : sorter
-    if (s.order) {
-      set({ sort: `${s.field}:${s.order === 'ascend' ? 'asc' : 'desc'}` })
-    }
-    if (tableFilters.status) {
-      set({ status: tableFilters.status[0] as TaskStatus })
-    }
-    if (tableFilters.input_type) {
-      set({ inputType: tableFilters.input_type[0] as InputType })
-    }
+    const sort = s.order ? `${s.field}:${s.order === 'ascend' ? 'asc' : 'desc'}` : 'created_at:desc'
+    
+    set({ 
+      page: pagination.current ?? 1, 
+      size: pagination.pageSize ?? 10,
+      sort 
+    })
   }
 
   return (
@@ -244,14 +247,14 @@ export function TaskListPage() {
                     { label: 'Failed', value: 'FAILED' },
                   ]}
                   value={filters.status}
-                  onChange={(v) => set({ status: v as TaskStatus | '' })}
+                  onChange={(v) => set({ status: v as TaskStatus | '', page: 1 })}
                 />
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Text strong style={{ fontSize: 12, color: token.colorTextSecondary }}>TYPE</Text>
                 <Select
                   value={filters.inputType}
-                  onChange={(v) => set({ inputType: v })}
+                  onChange={(v) => set({ inputType: v, page: 1 })}
                   options={[
                     { label: 'All types', value: '' },
                     { label: 'Text', value: 'text' },
@@ -265,7 +268,7 @@ export function TaskListPage() {
               <RangePicker
                 showTime
                 onChange={(v) =>
-                  set({ dateRange: v as [Dayjs | null, Dayjs | null] | null })
+                  set({ dateRange: v as [Dayjs | null, Dayjs | null] | null, page: 1 })
                 }
                 style={{ width: 340 }}
               />
@@ -299,7 +302,15 @@ export function TaskListPage() {
             rowKey="id"
             loading={isLoading || isFetching}
             scroll={{ x: 1100 }}
-            pagination={false}
+            pagination={{
+              current: data?.page ?? filters.page,
+              pageSize: data?.size ?? filters.size,
+              total: data?.total_count ?? 0,
+              showSizeChanger: true,
+              pageSizeOptions: ['5', '10', '25', '50', '100'],
+              position: ['bottomCenter'],
+              showTotal: (total) => `Total ${total} tasks`,
+            }}
             rowSelection={{
               selectedRowKeys: selectedIds,
               onChange: (keys) => setSelectedIds(keys as string[]),
@@ -309,24 +320,6 @@ export function TaskListPage() {
               style: { cursor: 'pointer' },
             })}
             onChange={handleTableChange}
-            footer={() =>
-              data?.has_more ? (
-                <div style={{ padding: '12px 0', textAlign: 'center' }}>
-                   <Button
-                    loading={isFetching}
-                    onClick={() => setFilters((f) => ({ ...f, cursor: data.next_cursor ?? undefined }))}
-                  >
-                    Load More Tasks
-                  </Button>
-                </div>
-              ) : (
-                <div style={{ padding: '16px', textAlign: 'center' }}>
-                  <Text style={{ fontSize: 13, color: token.colorTextSecondary }}>
-                    Showing {data?.tasks.length ?? 0} tasks. End of history.
-                  </Text>
-                </div>
-              )
-            }
           />
         </Card>
       </Space>

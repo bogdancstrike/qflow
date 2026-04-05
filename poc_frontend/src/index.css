@@ -12,7 +12,7 @@ body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
-  background-color: #f0f2f5;
+  /* Background will be handled by Ant Design Layout */
 }
 
 #root {
@@ -38,6 +38,10 @@ body {
   background: #bfbfbf;
 }
 
+.ant-layout {
+  background: transparent !important;
+}
+
 /* Ant Design Table Hover / Clickable rows */
 .ant-table-row {
   transition: background 0.2s;
@@ -45,5 +49,9 @@ body {
 
 /* Task Card Hover Effect */
 .task-card-hover:hover {
-  background-color: #fafafa;
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.dark-mode .task-card-hover:hover {
+  background-color: rgba(255, 255, 255, 0.05);
 }
