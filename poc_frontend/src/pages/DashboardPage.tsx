@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import {
-  Row, Col, Card, Table, Tag, Space, Typography, Spin, Alert, Button, Divider, Tooltip, Tabs,
+  Row, Col, Card, Table, Tag, Space, Typography, Spin, Alert, Button, Divider, Tooltip, Tabs, theme,
 } from 'antd'
 import {
   InfoCircleOutlined,
@@ -11,7 +11,7 @@ import {
 import type { ColumnsType } from 'antd/es/table'
 import { useDashboardStats } from '@/hooks/useDashboardStats'
 import { TaskStatusBadge } from '@/components/shared/TaskStatusBadge'
-import { formatMs, formatRelativeTime, inputPreview } from '@/lib/formatters'
+import { formatMs, formatRelativeTime, inputPreview, formatDuration } from '@/lib/formatters'
 import type { Task, OutputType } from '@/types'
 import { OUTPUT_LABELS } from '@/lib/constants'
 
@@ -33,16 +33,17 @@ function AnalysisCard({
   loading?: boolean
   footer?: React.ReactNode
 }) {
+  const { token } = theme.useToken()
   return (
-    <Card bordered={false} loading={loading} bodyStyle={{ padding: '20px 24px 8px' }}>
+    <Card variant="borderless" loading={loading} styles={{ body: { padding: '20px 24px 8px' } }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <Text type="secondary" style={{ fontSize: 14 }}>{title}</Text>
+        <Text style={{ fontSize: 14, color: token.colorTextSecondary }}>{title}</Text>
         <Tooltip title="Task stats information">
-          <InfoCircleOutlined style={{ color: '#8c8c8c' }} />
+          <InfoCircleOutlined style={{ color: token.colorTextDescription }} />
         </Tooltip>
       </div>
       <div style={{ margin: '4px 0 12px' }}>
-        <Text style={{ fontSize: 30, color: 'inherit', fontWeight: 600 }}>
+        <Text style={{ fontSize: 30, color: token.colorTextHeading, fontWeight: 600 }}>
           {value}{suffix}
         </Text>
       </div>
@@ -50,7 +51,7 @@ function AnalysisCard({
         {/* Vertical spacing consistency */}
       </div>
       <Divider style={{ margin: '8px 0' }} />
-      <div style={{ padding: '8px 0', fontSize: 14 }}>
+      <div style={{ padding: '8px 0', fontSize: 14, color: token.colorTextSecondary }}>
         {footer}
       </div>
     </Card>
@@ -68,7 +69,7 @@ const RECENT_COLS: ColumnsType<Task> = [
     title: 'TYPE',
     dataIndex: 'input_type',
     width: 100,
-    render: (v: string) => <Text style={{ fontSize: 13, textTransform: 'uppercase', color: 'inherit' }}>{v}</Text>,
+    render: (v: string) => <Text style={{ fontSize: 13, textTransform: 'uppercase' }}>{v}</Text>,
   },
   {
     title: 'CONTENT PREVIEW',
@@ -77,6 +78,29 @@ const RECENT_COLS: ColumnsType<Task> = [
     render: (v: Record<string, unknown>) => (
       <Text type="secondary" style={{ fontSize: 13 }}>{inputPreview(v)}</Text>
     ),
+  },
+  {
+    title: 'OUTPUTS',
+    dataIndex: 'outputs',
+    width: 200,
+    render: (v: OutputType[]) => (
+      <Space wrap size={4}>
+        {v.map((o) => (
+          <Tag key={o} variant="filled" style={{ fontSize: 10, margin: 0 }}>
+            {OUTPUT_LABELS[o]}
+          </Tag>
+        ))}
+      </Space>
+    ),
+  },
+  {
+    title: 'DURATION',
+    key: 'duration',
+    width: 100,
+    render: (_: unknown, record: Task) =>
+      record.status === 'COMPLETED' || record.status === 'FAILED'
+        ? <Text style={{ fontSize: 12 }}>{formatDuration(record.created_at, record.updated_at)}</Text>
+        : <Text type="secondary">—</Text>,
   },
   {
     title: 'STATUS',
@@ -96,6 +120,7 @@ const RECENT_COLS: ColumnsType<Task> = [
 export function DashboardPage() {
   const { data: stats, isLoading, error } = useDashboardStats()
   const navigate = useNavigate()
+  const { token } = theme.useToken()
 
   if (error) return <Alert type="error" message={error.message} />
 
@@ -125,7 +150,7 @@ export function DashboardPage() {
               textAlign: 'center',
               fontSize: 28,
               fontWeight: 600,
-              fill: 'currentColor',
+              fill: token.colorTextHeading,
             },
           },
           {
@@ -136,7 +161,7 @@ export function DashboardPage() {
               y: '62%',
               textAlign: 'center',
               fontSize: 14,
-              fill: '#8c8c8c',
+              fill: token.colorTextSecondary,
             },
           },
         ]
@@ -184,7 +209,7 @@ export function DashboardPage() {
   }
 
   return (
-    <Space direction="vertical" size={24} style={{ width: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       {/* Top Section */}
       <Row gutter={[20, 20]}>
         <Col xs={24} sm={12} lg={6}>
@@ -243,7 +268,7 @@ export function DashboardPage() {
       </Row>
 
       {/* Main Charts */}
-      <Card bordered={false} bodyStyle={{ padding: '0 24px 24px' }}>
+      <Card variant="borderless" styles={{ body: { padding: '0 24px 24px' } }}>
         <Tabs
           defaultActiveKey="1"
           size="large"
@@ -288,7 +313,7 @@ export function DashboardPage() {
       {/* Recent tasks Table */}
       <Card
         title={<Text strong>Recent Pipeline Activity</Text>}
-        bordered={false}
+        variant="borderless"
         extra={<Button type="link" onClick={() => navigate('/tasks')}>All Tasks</Button>}
       >
         <Table
@@ -303,6 +328,6 @@ export function DashboardPage() {
           })}
         />
       </Card>
-    </Space>
+    </div>
   )
 }

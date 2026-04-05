@@ -1,4 +1,4 @@
-import { Typography, Table, Tag, Space, Badge, Skeleton, Alert, Card, Row, Col } from 'antd'
+import { Typography, Table, Tag, Space, Badge, Skeleton, Alert, Card, Row, Col, theme } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { useFlows } from '@/hooks/useFlows'
 import { DagGraph } from '@/components/dag/DagGraph'
@@ -62,23 +62,23 @@ const COLUMNS: ColumnsType<NodeDef> = [
 
 export function FlowCataloguePage() {
   const { data, isLoading, error } = useFlows()
+  const { token } = theme.useToken()
 
   if (error) return <Alert type="error" message={error.message} />
 
   return (
-    <Space direction="vertical" style={{ width: '100%' }} size={24}>
+    <Space direction="vertical" size={24} style={{ width: '100%' }}>
       <div>
-        <Title level={3} style={{ margin: 0, letterSpacing: '-0.025em' }}>System Architecture</Title>
-        <Text type="secondary">Explore the node catalogue and processing topology of the QFlow orchestrator.</Text>
+        <Title level={3} style={{ margin: 0, letterSpacing: '-0.025em', color: token.colorTextHeading }}>System Architecture</Title>
+        <Text style={{ color: token.colorTextSecondary }}>Explore the node catalogue and processing topology of the QFlow orchestrator.</Text>
       </div>
 
       <Row gutter={[20, 20]}>
         <Col span={24}>
           <Card 
             title={<Text strong style={{ fontSize: 14 }}>Processing Node Registry</Text>} 
-            bordered={false}
-            style={{ boxShadow: '0 1px 3px 0 rgba(0,0,0,0.1)' }}
-            bodyStyle={{ padding: 0 }}
+            variant="borderless"
+            styles={{ body: { padding: 0 } }}
           >
             {isLoading ? (
               <div style={{ padding: 24 }}><Skeleton active /></div>
@@ -87,7 +87,6 @@ export function FlowCataloguePage() {
                 dataSource={data?.nodes}
                 columns={COLUMNS}
                 rowKey="node_id"
-                size="middle"
                 pagination={false}
               />
             )}
@@ -97,10 +96,9 @@ export function FlowCataloguePage() {
         <Col span={24}>
           <Card 
             title={<Text strong style={{ fontSize: 14 }}>Execution Blueprint (DAG)</Text>} 
-            bordered={false}
-            style={{ boxShadow: '0 1px 3px 0 rgba(0,0,0,0.1)' }}
+            variant="borderless"
           >
-            <div style={{ background: '#fafafa', borderRadius: 4, border: '1px solid #f0f0f0', padding: 16 }}>
+            <div style={{ background: token.colorFillAlter, borderRadius: 4, border: `1px solid ${token.colorBorderSecondary}`, padding: 16 }}>
                <DagGraph
                 plan={FULL_PLAN}
                 currentStep={null}
@@ -109,8 +107,8 @@ export function FlowCataloguePage() {
               />
             </div>
             <div style={{ marginTop: 12 }}>
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                <Text strong>Topology overview:</Text> Full processing graph showing YouTube download, STT, and parallel analysis branches.
+              <Text style={{ fontSize: 12, color: token.colorTextSecondary }}>
+                <Text strong style={{ color: token.colorTextSecondary }}>Topology overview:</Text> Full processing graph showing YouTube download, STT, and parallel analysis branches.
               </Text>
             </div>
           </Card>
@@ -118,7 +116,7 @@ export function FlowCataloguePage() {
       </Row>
 
       <div style={{ marginTop: 8 }}>
-        <Title level={4} style={{ marginBottom: 16, letterSpacing: '-0.025em' }}>Analytics Definitions</Title>
+        <Title level={4} style={{ marginBottom: 16, letterSpacing: '-0.025em', color: token.colorTextHeading }}>Analytics Definitions</Title>
         {isLoading ? (
           <Skeleton active paragraph={{ rows: 3 }} />
         ) : (
@@ -126,18 +124,18 @@ export function FlowCataloguePage() {
             {(data?.valid_outputs ?? []).map((o) => (
               <Col key={o} xs={24} sm={12} lg={8} xl={6}>
                 <Card 
-                  bordered={false} 
-                  style={{ height: '100%', boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)', border: '1px solid #f1f5f9' }}
-                  bodyStyle={{ padding: 16 }}
+                  variant="borderless"
+                  styles={{ body: { padding: 16 } }}
+                  style={{ height: '100%' }}
                 >
                   <Space direction="vertical" size={12} style={{ width: '100%' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <Tag color="blue" bordered={false} style={{ fontSize: 10, fontWeight: 700, margin: 0 }}>{o.toUpperCase()}</Tag>
-                      <Badge status="processing" color="#3b82f6" />
+                      <Tag color="blue" variant="filled" style={{ fontSize: 10, fontWeight: 700, margin: 0 }}>{o.toUpperCase()}</Tag>
+                      <Badge status="processing" color={token.colorPrimary} />
                     </div>
                     <div>
-                      <Title level={5} style={{ margin: '0 0 4px', fontSize: 15 }}>{OUTPUT_LABELS[o as OutputType]}</Title>
-                      <Text type="secondary" style={{ fontSize: 13, lineHeight: 1.5, display: 'block' }}>
+                      <Title level={5} style={{ margin: '0 0 4px', fontSize: 15, color: token.colorTextHeading }}>{OUTPUT_LABELS[o as OutputType]}</Title>
+                      <Text style={{ fontSize: 13, lineHeight: 1.5, display: 'block', color: token.colorTextSecondary }}>
                         {OUTPUT_DESCRIPTIONS[o as OutputType]}
                       </Text>
                     </div>

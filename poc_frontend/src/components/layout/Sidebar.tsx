@@ -1,7 +1,7 @@
+import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Layout, Menu, Typography, Space, theme } from 'antd'
 import {
-  HomeOutlined,
   UnorderedListOutlined,
   BranchesOutlined,
   DashboardOutlined,
@@ -22,6 +22,7 @@ export function Sidebar() {
   const { token } = theme.useToken()
   const location = useLocation()
   const navigate = useNavigate()
+  const [collapsed, setCollapsed] = useState(false)
 
   const selectedKey =
     NAV_ITEMS.slice()
@@ -32,6 +33,9 @@ export function Sidebar() {
   return (
     <Sider
       width={240}
+      collapsible
+      collapsed={collapsed}
+      onCollapse={(value) => setCollapsed(value)}
       theme="light"
       style={{
         borderRight: `1px solid ${token.colorBorderSecondary}`,
@@ -42,8 +46,8 @@ export function Sidebar() {
         background: token.colorBgContainer
       }}
     >
-      <div style={{ padding: '24px 24px 16px' }}>
-        <Space size={12}>
+      <div style={{ padding: collapsed ? '24px 8px' : '24px 24px 16px', textAlign: collapsed ? 'center' : 'left' }}>
+        <Space size={12} align="center">
           <div style={{
             width: 32,
             height: 32,
@@ -54,11 +58,14 @@ export function Sidebar() {
             justifyContent: 'center',
             color: '#fff',
             fontWeight: 'bold',
-            fontSize: 18
+            fontSize: 18,
+            flexShrink: 0
           }}>Q</div>
-          <Title level={4} style={{ margin: 0, fontSize: 18, letterSpacing: '-0.025em', color: token.colorTextHeading }}>
-            QFlow AI
-          </Title>
+          {!collapsed && (
+            <Title level={4} style={{ margin: 0, fontSize: 18, letterSpacing: '-0.025em', color: token.colorTextHeading }}>
+              QFlow
+            </Title>
+          )}
         </Space>
       </div>
 

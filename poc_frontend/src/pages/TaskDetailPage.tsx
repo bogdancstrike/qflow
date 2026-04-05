@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Space, Typography, Descriptions, Button, Popconfirm, Alert, Collapse,
-  Tag, Spin, Result, Skeleton, Card,
+  Tag, Spin, Result, Skeleton, Card, theme,
 } from 'antd'
 import { DeleteOutlined, ReloadOutlined, ArrowLeftOutlined } from '@ant-design/icons'
 import { tasksApi } from '@/api/tasks'
@@ -13,7 +13,6 @@ import { CopyButton } from '@/components/shared/CopyButton'
 import { OutputViewer } from '@/components/task/OutputViewer'
 import { DagGraph } from '@/components/dag/DagGraph'
 import { StepLogTable } from '@/components/logs/StepLogTable'
-import { OUTPUT_LABELS } from '@/lib/constants'
 import { formatRelativeTime, formatDuration, inputPreview } from '@/lib/formatters'
 
 const { Title, Text } = Typography
@@ -23,6 +22,7 @@ export function TaskDetailPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [showLogs, setShowLogs] = useState(false)
+  const { token } = theme.useToken()
 
   const { data: task, isLoading, error, refetch } = useTaskPolling(id!)
 
@@ -50,15 +50,15 @@ export function TaskDetailPage() {
             icon={<ArrowLeftOutlined />} 
             type="text" 
             onClick={() => navigate(-1)}
-            style={{ color: '#64748b' }}
+            style={{ color: token.colorTextSecondary }}
           >
             Back
           </Button>
           <div>
-            <Title level={3} style={{ margin: 0, letterSpacing: '-0.025em' }}>
+            <Title level={3} style={{ margin: 0, letterSpacing: '-0.025em', color: token.colorTextHeading }}>
               Task <Text code style={{ fontSize: 20 }}>{task.id.slice(0, 8).toUpperCase()}</Text>
             </Title>
-            <Text type="secondary" style={{ fontSize: 13 }}>
+            <Text style={{ fontSize: 13, color: token.colorTextSecondary }}>
               Detailed execution status and results.
             </Text>
           </div>
@@ -78,31 +78,31 @@ export function TaskDetailPage() {
       </div>
 
       {/* Meta Card */}
-      <Card bordered={false} style={{ boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)' }} bodyStyle={{ padding: 24 }}>
+      <Card variant="borderless" styles={{ body: { padding: 24 } }}>
         <Descriptions 
           column={{ xs: 1, sm: 2, md: 3 }} 
           size="middle" 
-          labelStyle={{ color: '#64748b', fontWeight: 500 }}
-          contentStyle={{ color: '#1e293b' }}
+          labelStyle={{ color: token.colorTextSecondary, fontWeight: 500 }}
+          contentStyle={{ color: token.colorTextHeading }}
         >
           <Descriptions.Item label="Status">
             <TaskStatusBadge status={task.status} showDot />
           </Descriptions.Item>
           <Descriptions.Item label="Input Type">
-            <Tag color="blue" bordered={false} style={{ fontWeight: 600 }}>{task.input_type.toUpperCase()}</Tag>
+            <Tag color="blue" variant="filled" style={{ fontWeight: 600 }}>{task.input_type.toUpperCase()}</Tag>
           </Descriptions.Item>
           <Descriptions.Item label="Created">
-            {formatRelativeTime(task.created_at)}
+            <Text style={{ color: token.colorTextHeading }}>{formatRelativeTime(task.created_at)}</Text>
           </Descriptions.Item>
           <Descriptions.Item label="Duration">
-            <Text strong>
+            <Text strong style={{ color: token.colorTextHeading }}>
               {task.status === 'COMPLETED' || task.status === 'FAILED'
                 ? formatDuration(task.created_at, task.updated_at)
                 : '—'}
             </Text>
           </Descriptions.Item>
           <Descriptions.Item label="Retry Count">
-            {task.retry_count}
+            <Text style={{ color: token.colorTextHeading }}>{task.retry_count}</Text>
           </Descriptions.Item>
           <Descriptions.Item label="Full ID">
              <Space size={4}>
@@ -112,11 +112,11 @@ export function TaskDetailPage() {
           </Descriptions.Item>
         </Descriptions>
         
-        <div style={{ marginTop: 24, paddingTop: 24, borderTop: '1px solid #f1f5f9' }}>
+        <div style={{ marginTop: 24, paddingTop: 24, borderTop: `1px solid ${token.colorBorderSecondary}` }}>
            <Space direction="vertical" size={12} style={{ width: '100%' }}>
-              <Text type="secondary" strong style={{ fontSize: 12, letterSpacing: '0.05em' }}>INPUT PREVIEW</Text>
-              <div style={{ background: '#f8fafc', padding: '12px 16px', borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                <Text style={{ fontSize: 14, color: '#475569', lineHeight: 1.6 }}>
+              <Text strong style={{ fontSize: 12, letterSpacing: '0.05em', color: token.colorTextSecondary }}>INPUT PREVIEW</Text>
+              <div style={{ background: token.colorFillAlter, padding: '12px 16px', borderRadius: 8, border: `1px solid ${token.colorBorderSecondary}` }}>
+                <Text style={{ fontSize: 14, color: token.colorText, lineHeight: 1.6 }}>
                   {inputPreview(task.input_data as Record<string, unknown>)}
                 </Text>
               </div>
@@ -136,9 +136,8 @@ export function TaskDetailPage() {
 
       {/* DAG */}
       <Card 
-        bordered={false} 
-        style={{ boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)' }}
-        title={<Text strong style={{ fontSize: 14 }}>Execution Plan & Real-time Progress</Text>}
+        variant="borderless"
+        title={<Text strong style={{ fontSize: 14, color: token.colorTextHeading }}>Execution Plan & Real-time Progress</Text>}
       >
         <DagGraph
           plan={task.execution_plan}
@@ -151,33 +150,33 @@ export function TaskDetailPage() {
       {/* Results */}
       {task.status === 'COMPLETED' && task.final_output && (
         <div style={{ marginTop: 8 }}>
-          <Title level={4} style={{ marginBottom: 16, letterSpacing: '-0.025em' }}>Analytics Results</Title>
+          <Title level={4} style={{ marginBottom: 16, letterSpacing: '-0.025em', color: token.colorTextHeading }}>Analytics Results</Title>
           <OutputViewer finalOutput={task.final_output} sourceText={sourceText} />
         </div>
       )}
 
       {(task.status === 'PENDING' || task.status === 'RUNNING') && (
-        <Card bordered={false} style={{ textAlign: 'center', padding: '48px 0', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)' }}>
+        <Card variant="borderless" style={{ textAlign: 'center', padding: '48px 0' }}>
           <Spin size="large" />
           <div style={{ marginTop: 20 }}>
-            <Text strong style={{ fontSize: 16, display: 'block' }}>Orchestrating AI Services...</Text>
-            <Text type="secondary">Status refreshes every 2 seconds.</Text>
+            <Text strong style={{ fontSize: 16, display: 'block', color: token.colorTextHeading }}>Orchestrating AI Services...</Text>
+            <Text style={{ color: token.colorTextSecondary }}>Status refreshes every 2 seconds.</Text>
           </div>
         </Card>
       )}
 
       {/* Logs */}
       <Card 
-        bordered={false} 
+        variant="borderless"
         size="small" 
-        style={{ boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)', marginTop: 8 }}
+        style={{ marginTop: 8 }}
       >
         <Collapse
           ghost
           onChange={(keys) => setShowLogs(keys.includes('logs'))}
           items={[{
             key: 'logs',
-            label: <Text strong style={{ color: '#64748b' }}>Technical Execution Logs</Text>,
+            label: <Text strong style={{ color: token.colorTextSecondary }}>Technical Execution Logs</Text>,
             children: showLogs ? <StepLogTable taskId={task.id} /> : null,
           }]}
         />

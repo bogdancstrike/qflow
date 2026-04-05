@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { Dayjs } from 'dayjs'
 import {
   Table, Space, Button, Select, Segmented, DatePicker, Tag, Typography,
-  Popconfirm, message, Tooltip, Badge, Card,
+  Popconfirm, message, Tooltip, Badge, Card, theme,
 } from 'antd'
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table'
 import type { FilterValue, SorterResult } from 'antd/es/table/interface'
@@ -24,7 +24,7 @@ const { RangePicker } = DatePicker
 
 const INPUT_ICON: Record<string, React.ReactNode> = {
   text: <FileTextOutlined />,
-  youtube_url: <YoutubeOutlined style={{ color: '#ff0000' }} />,
+  youtube_url: <YoutubeOutlined style={{ color: '#ff4d4f' }} />,
   audio_path: <FileOutlined />,
 }
 
@@ -50,6 +50,7 @@ export function TaskListPage() {
   const [messageApi, ctx] = message.useMessage()
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const { token } = theme.useToken()
 
   const { data, isLoading, isFetching, refetch } = useQuery<TaskListResponse, Error>({
     queryKey: ['tasks', filters],
@@ -97,7 +98,7 @@ export function TaskListPage() {
       width: 120,
       render: (v: string) => (
         <Space size={4}>
-          <Text code style={{ fontSize: 11, color: '#64748b' }}>{v.slice(0, 8).toUpperCase()}</Text>
+          <Text code style={{ fontSize: 11, color: token.colorPrimary }}>{v.slice(0, 8).toUpperCase()}</Text>
           <CopyButton text={v} />
         </Space>
       ),
@@ -107,7 +108,7 @@ export function TaskListPage() {
       dataIndex: 'input_type',
       width: 110,
       render: (v: string) => (
-        <Tag color="blue" bordered={false} icon={INPUT_ICON[v] ?? null} style={{ fontSize: 11, fontWeight: 500 }}>
+        <Tag color="blue" variant="filled" icon={INPUT_ICON[v] ?? null} style={{ fontSize: 11, fontWeight: 500 }}>
           {v.replace('_', ' ').toUpperCase()}
         </Tag>
       ),
@@ -118,7 +119,7 @@ export function TaskListPage() {
       ellipsis: true,
       render: (v: Record<string, unknown>) => (
         <Tooltip title={JSON.stringify(v)} placement="topLeft">
-          <Text style={{ fontSize: 13, color: '#475569' }}>{inputPreview(v)}</Text>
+          <Text style={{ fontSize: 13, color: token.colorTextSecondary }}>{inputPreview(v)}</Text>
         </Tooltip>
       ),
     },
@@ -129,7 +130,7 @@ export function TaskListPage() {
       render: (v: OutputType[]) => (
         <Space wrap size={4}>
           {v.map((o) => (
-            <Tag key={o} style={{ fontSize: 10, margin: 0, background: '#f1f5f9', border: 'none', color: '#64748b' }}>
+            <Tag key={o} variant="filled" style={{ fontSize: 10, margin: 0 }}>
               {OUTPUT_LABELS[o]}
             </Tag>
           ))}
@@ -147,7 +148,7 @@ export function TaskListPage() {
       dataIndex: 'created_at',
       width: 100,
       render: (v: string) => (
-        <Text style={{ fontSize: 12, color: '#94a3b8' }}>{formatRelativeTime(v)}</Text>
+        <Text style={{ fontSize: 12, color: token.colorTextDescription }}>{formatRelativeTime(v)}</Text>
       ),
     },
     {
@@ -169,7 +170,7 @@ export function TaskListPage() {
           <Button
             size="small"
             type="text"
-            icon={<EyeOutlined style={{ color: '#64748b' }} />}
+            icon={<EyeOutlined style={{ color: token.colorTextDescription }} />}
             onClick={() => navigate(`/tasks/${record.id}`)}
           />
           <Popconfirm
@@ -191,21 +192,37 @@ export function TaskListPage() {
     },
   ]
 
+  const handleTableChange = (
+    _: TablePaginationConfig,
+    tableFilters: Record<string, FilterValue | null>,
+    sorter: SorterResult<Task> | SorterResult<Task>[],
+  ) => {
+    const s = Array.isArray(sorter) ? sorter[0] : sorter
+    if (s.order) {
+      set({ sort: `${s.field}:${s.order === 'ascend' ? 'asc' : 'desc'}` })
+    }
+    if (tableFilters.status) {
+      set({ status: tableFilters.status[0] as TaskStatus })
+    }
+    if (tableFilters.input_type) {
+      set({ inputType: tableFilters.input_type[0] as InputType })
+    }
+  }
+
   return (
     <div style={{ width: '100%' }}>
       {ctx}
       <Space direction="vertical" size={24} style={{ width: '100%' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div>
-            <Title level={3} style={{ margin: 0, letterSpacing: '-0.025em' }}>Task History</Title>
-            <Text type="secondary">Manage and monitor all orchestrated AI tasks.</Text>
+            <Title level={3} style={{ margin: 0, letterSpacing: '-0.025em', color: token.colorTextHeading }}>Task History</Title>
+            <Text style={{ color: token.colorTextSecondary }}>Manage and monitor all orchestrated AI tasks.</Text>
           </div>
           <Space>
              <Button 
                icon={<ReloadOutlined />} 
                onClick={() => refetch()} 
                loading={isFetching}
-               style={{ borderRadius: 6 }}
              >
               Refresh
             </Button>
@@ -213,11 +230,11 @@ export function TaskListPage() {
         </div>
 
         {/* Toolbar Card */}
-        <Card bordered={false} bodyStyle={{ padding: 16 }} style={{ boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)' }}>
+        <Card variant="borderless" styles={{ body: { padding: 16 } }}>
           <Space style={{ justifyContent: 'space-between', width: '100%' }} wrap>
             <Space wrap size={16}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Text strong style={{ fontSize: 12, color: '#64748b' }}>STATUS</Text>
+                <Text strong style={{ fontSize: 12, color: token.colorTextSecondary }}>STATUS</Text>
                 <Segmented
                   options={[
                     { label: 'All', value: '' },
@@ -231,7 +248,7 @@ export function TaskListPage() {
                 />
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Text strong style={{ fontSize: 12, color: '#64748b' }}>TYPE</Text>
+                <Text strong style={{ fontSize: 12, color: token.colorTextSecondary }}>TYPE</Text>
                 <Select
                   value={filters.inputType}
                   onChange={(v) => set({ inputType: v })}
@@ -252,7 +269,7 @@ export function TaskListPage() {
                 }
                 style={{ width: 340 }}
               />
-              <Button type="text" onClick={() => setFilters(DEFAULT_FILTERS)} style={{ color: '#64748b' }}>
+              <Button type="text" onClick={() => setFilters(DEFAULT_FILTERS)} style={{ color: token.colorTextSecondary }}>
                 Reset Filters
               </Button>
             </Space>
@@ -275,12 +292,11 @@ export function TaskListPage() {
         </Card>
 
         {/* Table Card */}
-        <Card bordered={false} bodyStyle={{ padding: 0 }} style={{ boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)', overflow: 'hidden' }}>
+        <Card variant="borderless" styles={{ body: { padding: 0 } }} style={{ overflow: 'hidden' }}>
           <Table
             dataSource={data?.tasks ?? []}
             columns={columns}
             rowKey="id"
-            size="middle"
             loading={isLoading || isFetching}
             scroll={{ x: 1100 }}
             pagination={false}
@@ -292,20 +308,20 @@ export function TaskListPage() {
               onClick: () => navigate(`/tasks/${record.id}`),
               style: { cursor: 'pointer' },
             })}
+            onChange={handleTableChange}
             footer={() =>
               data?.has_more ? (
                 <div style={{ padding: '12px 0', textAlign: 'center' }}>
                    <Button
                     loading={isFetching}
                     onClick={() => setFilters((f) => ({ ...f, cursor: data.next_cursor ?? undefined }))}
-                    style={{ borderRadius: 6 }}
                   >
                     Load More Tasks
                   </Button>
                 </div>
               ) : (
                 <div style={{ padding: '16px', textAlign: 'center' }}>
-                  <Text type="secondary" style={{ fontSize: 13 }}>
+                  <Text style={{ fontSize: 13, color: token.colorTextSecondary }}>
                     Showing {data?.tasks.length ?? 0} tasks. End of history.
                   </Text>
                 </div>

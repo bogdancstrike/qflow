@@ -24,7 +24,7 @@ export function TaskStatusBadge({ status, showDot = false }: Props) {
   }
 
   return (
-    <Tag color={color} bordered={false}>
+    <Tag color={color} variant="filled">
       {status}
     </Tag>
   )
