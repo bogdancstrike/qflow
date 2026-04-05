@@ -7,6 +7,7 @@ import ReactFlow, {
   useNodesState,
   useEdgesState,
   MarkerType,
+  Position,
 } from 'reactflow'
 import dagre from 'dagre'
 import { theme } from 'antd'
@@ -23,33 +24,44 @@ const GET_STATE_COLORS = (state: NodeState, token: any) => {
   switch (state) {
     case 'running':
       return { 
-        bg: token.colorInfoBg, 
-        border: token.colorInfo, 
-        text: token.colorInfoText,
-        shadow: `0 0 10px ${token.colorInfo}40`
+        bg: '#e6f4ff', 
+        border: '#1677ff', 
+        text: '#0958d9',
+        shadow: `0 0 12px ${token.colorInfo}80`
       }
     case 'completed':
       return { 
-        bg: token.colorSuccessBg, 
-        border: token.colorSuccess, 
-        text: token.colorSuccessText,
+        bg: '#f6ffed', 
+        border: '#52c41a', 
+        text: '#389e0d',
         shadow: 'none'
       }
     case 'failed':
       return { 
-        bg: token.colorErrorBg, 
-        border: token.colorError, 
-        text: token.colorErrorText,
+        bg: '#fff2f0', 
+        border: '#ff4d4f', 
+        text: '#cf1322',
         shadow: 'none'
       }
     default:
       return { 
-        bg: token.colorFillQuaternary, 
+        bg: token.mode === 'dark' ? '#1d1d1d' : '#fafafa', 
         border: token.colorBorder, 
         text: token.colorTextSecondary,
         shadow: 'none'
       }
   }
+}
+
+// Map output types to colors for colorful edges
+const BRANCH_COLORS: Record<string, string> = {
+  ner: '#1890ff',
+  sentiment: '#eb2f96',
+  summary: '#722ed1',
+  iptc: '#fa8c16',
+  keywords: '#13c2c2',
+  lang_meta: '#2f54eb',
+  text_en: '#52c41a',
 }
 
 function getNodeState(
@@ -66,7 +78,7 @@ function getNodeState(
 
 function applyDagreLayout(nodes: Node[], edges: Edge[]): Node[] {
   const g = new dagre.graphlib.Graph()
-  g.setGraph({ rankdir: 'LR', nodesep: 40, ranksep: 60 })
+  g.setGraph({ rankdir: 'LR', nodesep: 40, ranksep: 80 })
   g.setDefaultEdgeLabel(() => ({}))
 
   nodes.forEach((n) => g.setNode(n.id, { width: NODE_W, height: NODE_H }))
@@ -100,19 +112,21 @@ export function DagGraph({ plan, currentStep, stepResults, hasError = false, hei
         id,
         type: 'default',
         position: { x: 0, y: 0 },
+        sourcePosition: Position.Right, // Dot on the right
+        targetPosition: Position.Left,  // Dot on the left
         data: {
           label: (
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontWeight: 600, fontSize: 13, color: colors.text }}>
                 {NODE_LABELS[id] ?? id}
               </div>
-              <div style={{ fontSize: 10, opacity: 0.6, color: colors.text }}>{id}</div>
+              <div style={{ fontSize: 10, opacity: 0.6 }}>{id}</div>
             </div>
           ),
         },
         style: { 
           background: colors.bg, 
-          border: `1px solid ${colors.border}`, 
+          border: `2px solid ${colors.border}`, 
           borderRadius: 4, 
           width: NODE_W, 
           height: NODE_H, 
@@ -125,21 +139,21 @@ export function DagGraph({ plan, currentStep, stepResults, hasError = false, hei
       })
     }
 
-    const addEdge = (source: string, target: string, label?: string) => {
+    const addEdge = (source: string, target: string, branchType?: string) => {
+      const color = branchType ? (BRANCH_COLORS[branchType] || token.colorBorder) : token.colorPrimary
       edges.push({
-        id: `${source}->${target}`,
+        id: `${source}->${target}-${branchType || ''}`,
         source,
         target,
-        label,
-        type: 'straight', // Straight lines as requested
-        labelStyle: { fill: token.colorTextSecondary, fontSize: 10, fontWeight: 500 },
+        type: 'straight',
         style: { 
-          stroke: currentStep === target ? token.colorInfo : token.colorBorder, 
-          strokeWidth: 2 
+          stroke: currentStep === target ? token.colorInfo : color, 
+          strokeWidth: 2.5,
+          opacity: 0.8
         },
         markerEnd: {
           type: MarkerType.ArrowClosed,
-          color: currentStep === target ? token.colorInfo : token.colorBorder,
+          color: currentStep === target ? token.colorInfo : color,
         },
         animated: currentStep === target,
       })
@@ -157,12 +171,13 @@ export function DagGraph({ plan, currentStep, stepResults, hasError = false, hei
     const seen = new Set<string>()
     for (const branch of plan.branches) {
       let branchPrev = prev
+      const branchType = branch.output_type.replace('_result', '')
       for (const step of branch.steps) {
         if (!seen.has(step)) {
           seen.add(step)
           addNode(step, getNodeState(step, currentStep, stepResults, hasError))
         }
-        if (branchPrev) addEdge(branchPrev, step, branch.output_type.replace('_result', ''))
+        if (branchPrev) addEdge(branchPrev, step, branchType)
         branchPrev = step
       }
     }

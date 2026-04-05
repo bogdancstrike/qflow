@@ -136,7 +136,7 @@ export function DashboardPage() {
     colorField: 'status',
     radius: 0.8,
     innerRadius: 0.65,
-    label: { text: 'value', style: { fontSize: 11, fontWeight: 600 } },
+    label: { text: 'value', style: { fontSize: 11, fontWeight: 600, fill: token.colorText } },
     legend: { color: { position: 'bottom' } },
     color: ({ status }: { status: string }) => STATUS_PIE_COLORS[status] ?? '#8c8c8c',
     annotations: stats
@@ -175,7 +175,10 @@ export function DashboardPage() {
     colorField: 'status',
     stack: true,
     color: ({ status }: { status: string }) => STATUS_PIE_COLORS[status] ?? '#8c8c8c',
-    axis: { x: { label: { autoRotate: true } } },
+    axis: { 
+      x: { label: { autoRotate: true, style: { fill: token.colorTextSecondary } } },
+      y: { label: { style: { fill: token.colorTextSecondary } } }
+    },
     legend: { color: { position: 'top', layout: { justifyContent: 'flex-end' } } },
   }
 
@@ -187,9 +190,12 @@ export function DashboardPage() {
     label: {
       text: (d: { avgMs: number }) => formatMs(d.avgMs),
       position: 'right',
-      style: { fontSize: 12, fontWeight: 600 },
+      style: { fontSize: 12, fontWeight: 600, fill: token.colorTextSecondary },
     },
-    axis: { x: { title: { text: 'Avg duration (ms)' } } },
+    axis: { 
+      x: { title: { text: 'Avg duration (ms)', style: { fill: token.colorTextSecondary } }, label: { style: { fill: token.colorTextSecondary } } },
+      y: { label: { style: { fill: token.colorTextSecondary } } }
+    },
     legend: false,
   }
 
@@ -203,8 +209,11 @@ export function DashboardPage() {
     xField: 'count',
     yField: 'output',
     colorField: 'output',
-    label: { text: 'count', position: 'right', style: { fontSize: 12, fontWeight: 600 } },
-    axis: { x: { title: { text: 'Times requested' } } },
+    label: { text: 'count', position: 'right', style: { fontSize: 12, fontWeight: 600, fill: token.colorTextSecondary } },
+    axis: { 
+      x: { title: { text: 'Times requested', style: { fill: token.colorTextSecondary } }, label: { style: { fill: token.colorTextSecondary } } },
+      y: { label: { style: { fill: token.colorTextSecondary } } }
+    },
     legend: false,
   }
 
@@ -220,7 +229,7 @@ export function DashboardPage() {
             footer={
               <Space>
                 <Text type="secondary">Daily Tasks</Text>
-                <Text strong>{Math.floor((stats?.total ?? 0) / 30)}</Text>
+                <Text strong style={{ color: token.colorTextHeading }}>{Math.floor((stats?.total ?? 0) / 30)}</Text>
               </Space>
             }
           />
@@ -234,7 +243,7 @@ export function DashboardPage() {
             footer={
               <Space>
                 <Text type="secondary">Failed total</Text>
-                <Text strong>{stats?.byStatus.FAILED ?? 0}</Text>
+                <Text strong style={{ color: token.colorTextHeading }}>{stats?.byStatus.FAILED ?? 0}</Text>
               </Space>
             }
           />
@@ -247,7 +256,7 @@ export function DashboardPage() {
             footer={
               <Space>
                 <Text type="secondary">P95 Latency</Text>
-                <Text strong>{formatMs(stats?.p95DurationMs ?? 0)}</Text>
+                <Text strong style={{ color: token.colorTextHeading }}>{formatMs(stats?.p95DurationMs ?? 0)}</Text>
               </Space>
             }
           />
@@ -260,7 +269,7 @@ export function DashboardPage() {
             footer={
               <Space>
                 <Text type="secondary">In queue</Text>
-                <Text strong>{stats?.byStatus.PENDING ?? 0}</Text>
+                <Text strong style={{ color: token.colorTextHeading }}>{stats?.byStatus.PENDING ?? 0}</Text>
               </Space>
             }
           />
@@ -272,7 +281,7 @@ export function DashboardPage() {
         <Tabs
           defaultActiveKey="1"
           size="large"
-          tabBarStyle={{ marginBottom: 24 }}
+          tabBarStyle={{ marginBottom: 24, color: token.colorTextSecondary }}
           items={[
             {
               key: '1',
@@ -280,11 +289,11 @@ export function DashboardPage() {
               children: (
                 <Row gutter={48}>
                   <Col span={16}>
-                    <Title level={5} style={{ marginBottom: 20 }}>Throughput (7 Days)</Title>
+                    <Title level={5} style={{ marginBottom: 20, color: token.colorTextHeading }}>Throughput (7 Days)</Title>
                     {isLoading ? <Spin /> : <Column {...timeSeriesConfig} height={300} />}
                   </Col>
                   <Col span={8}>
-                    <Title level={5} style={{ marginBottom: 20 }}>Status Distribution</Title>
+                    <Title level={5} style={{ marginBottom: 20, color: token.colorTextHeading }}>Status Distribution</Title>
                     {isLoading ? <Spin /> : <Pie {...pieConfig} height={300} />}
                   </Col>
                 </Row>
@@ -296,11 +305,11 @@ export function DashboardPage() {
               children: (
                 <Row gutter={48}>
                   <Col span={12}>
-                    <Title level={5} style={{ marginBottom: 20 }}>Latency by Input Type</Title>
+                    <Title level={5} style={{ marginBottom: 20, color: token.colorTextHeading }}>Latency by Input Type</Title>
                     {isLoading ? <Spin /> : <Bar {...durationConfig} height={300} />}
                   </Col>
                   <Col span={12}>
-                    <Title level={5} style={{ marginBottom: 20 }}>Most Requested Outputs</Title>
+                    <Title level={5} style={{ marginBottom: 20, color: token.colorTextHeading }}>Most Requested Outputs</Title>
                     {isLoading ? <Spin /> : <Bar {...outputUsageConfig} height={300} />}
                   </Col>
                 </Row>
@@ -312,7 +321,7 @@ export function DashboardPage() {
 
       {/* Recent tasks Table */}
       <Card
-        title={<Text strong>Recent Pipeline Activity</Text>}
+        title={<Text strong style={{ color: token.colorTextHeading }}>Recent Pipeline Activity</Text>}
         variant="borderless"
         extra={<Button type="link" onClick={() => navigate('/tasks')}>All Tasks</Button>}
       >
