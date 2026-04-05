@@ -1,25 +1,23 @@
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Card, Space, Typography, Tag, Button, Popconfirm, Tooltip } from 'antd'
+import { Space, Typography, Tag, Button, Popconfirm, Divider } from 'antd'
 import {
   FileTextOutlined,
   YoutubeOutlined,
   FileOutlined,
   DeleteOutlined,
-  EyeOutlined,
 } from '@ant-design/icons'
 import type { Task } from '@/types'
 import { TaskStatusBadge } from '@/components/shared/TaskStatusBadge'
-import { OUTPUT_LABELS } from '@/lib/constants'
-import { formatRelativeTime, formatDuration, inputPreview } from '@/lib/formatters'
+import { formatRelativeTime, inputPreview } from '@/lib/formatters'
 import { tasksApi } from '@/api/tasks'
 
 const { Text } = Typography
 
 const INPUT_ICON = {
-  text: <FileTextOutlined />,
-  youtube_url: <YoutubeOutlined style={{ color: '#ff0000' }} />,
-  audio_path: <FileOutlined />,
+  text: <FileTextOutlined style={{ color: '#1890ff' }} />,
+  youtube_url: <YoutubeOutlined style={{ color: '#ff4d4f' }} />,
+  audio_path: <FileOutlined style={{ color: '#52c41a' }} />,
 }
 
 interface Props {
@@ -35,56 +33,48 @@ export function TaskCard({ task }: Props) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
   })
 
-  const duration =
-    task.status === 'COMPLETED' || task.status === 'FAILED'
-      ? formatDuration(task.created_at, task.updated_at)
-      : null
-
   return (
-    <Card
-      size="small"
-      hoverable
+    <div 
       onClick={() => navigate(`/tasks/${task.id}`)}
-      style={{ marginBottom: 8 }}
-      bodyStyle={{ padding: '10px 16px' }}
+      style={{ 
+        padding: '12px 0', 
+        borderBottom: '1px solid #f0f0f0', 
+        cursor: 'pointer',
+        transition: 'background 0.2s',
+      }}
+      className="task-card-hover"
     >
-      <Space style={{ width: '100%', justifyContent: 'space-between' }} wrap>
-        <Space>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+        <Space size={8}>
           {INPUT_ICON[task.input_type]}
-          <Text code style={{ fontSize: 12 }}>
-            {task.id.slice(0, 8)}
-          </Text>
-          <Text type="secondary" style={{ maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {inputPreview(task.input_data as Record<string, unknown>)}
-          </Text>
+          <Text strong style={{ fontSize: 13 }}>{task.id.slice(0, 8).toUpperCase()}</Text>
         </Space>
+        <TaskStatusBadge status={task.status} showDot={false} />
+      </div>
+      
+      <div style={{ marginBottom: 8 }}>
+        <Text type="secondary" style={{ fontSize: 12, display: 'block' }} ellipsis>
+          {inputPreview(task.input_data as Record<string, unknown>)}
+        </Text>
+      </div>
 
-        <Space onClick={(e) => e.stopPropagation()}>
-          <TaskStatusBadge status={task.status} showDot />
-          {duration && <Text type="secondary" style={{ fontSize: 12 }}>{duration}</Text>}
-          <Text type="secondary" style={{ fontSize: 12 }}>{formatRelativeTime(task.created_at)}</Text>
-
-          <Button
-            size="small"
-            icon={<EyeOutlined />}
-            onClick={(e) => { e.stopPropagation(); navigate(`/tasks/${task.id}`) }}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Text style={{ fontSize: 11, color: '#bfbfbf' }}>{formatRelativeTime(task.created_at)}</Text>
+        <Popconfirm
+          title="Delete task?"
+          onConfirm={(e) => { e?.stopPropagation(); del() }}
+          okText="Yes"
+          cancelText="No"
+        >
+          <Button 
+            size="small" 
+            type="text" 
+            danger 
+            icon={<DeleteOutlined style={{ fontSize: 12 }} />} 
+            onClick={(e) => e.stopPropagation()} 
           />
-          <Popconfirm
-            title="Delete this task?"
-            onConfirm={(e) => { e?.stopPropagation(); del() }}
-            okText="Delete"
-            okType="danger"
-          >
-            <Button size="small" danger icon={<DeleteOutlined />} onClick={(e) => e.stopPropagation()} />
-          </Popconfirm>
-        </Space>
-      </Space>
-
-      <Space style={{ marginTop: 6 }} wrap>
-        {task.outputs.map((o) => (
-          <Tag key={o} style={{ fontSize: 11 }}>{OUTPUT_LABELS[o]}</Tag>
-        ))}
-      </Space>
-    </Card>
+        </Popconfirm>
+      </div>
+    </div>
   )
 }

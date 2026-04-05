@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { Dayjs } from 'dayjs'
 import {
   Table, Space, Button, Select, Segmented, DatePicker, Tag, Typography,
-  Popconfirm, message, Tooltip, Badge,
+  Popconfirm, message, Tooltip, Badge, Card,
 } from 'antd'
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table'
 import type { FilterValue, SorterResult } from 'antd/es/table/interface'
@@ -19,7 +19,7 @@ import { OUTPUT_LABELS } from '@/lib/constants'
 import { formatRelativeTime, formatDuration, inputPreview } from '@/lib/formatters'
 import type { Task, TaskStatus, InputType, TaskListResponse, OutputType } from '@/types'
 
-const { Text } = Typography
+const { Text, Title } = Typography
 const { RangePicker } = DatePicker
 
 const INPUT_ICON: Record<string, React.ReactNode> = {
@@ -94,10 +94,10 @@ export function TaskListPage() {
     {
       title: 'Task ID',
       dataIndex: 'id',
-      width: 130,
+      width: 120,
       render: (v: string) => (
-        <Space size={2}>
-          <Text code style={{ fontSize: 11 }}>{v.slice(0, 8)}</Text>
+        <Space size={4}>
+          <Text code style={{ fontSize: 11, color: '#64748b' }}>{v.slice(0, 8).toUpperCase()}</Text>
           <CopyButton text={v} />
         </Space>
       ),
@@ -106,33 +106,32 @@ export function TaskListPage() {
       title: 'Type',
       dataIndex: 'input_type',
       width: 110,
-      filters: [
-        { text: 'Text', value: 'text' },
-        { text: 'File', value: 'audio_path' },
-        { text: 'YouTube', value: 'youtube_url' },
-      ],
       render: (v: string) => (
-        <Tag icon={INPUT_ICON[v] ?? null}>{v}</Tag>
+        <Tag color="blue" bordered={false} icon={INPUT_ICON[v] ?? null} style={{ fontSize: 11, fontWeight: 500 }}>
+          {v.replace('_', ' ').toUpperCase()}
+        </Tag>
       ),
     },
     {
-      title: 'Input',
+      title: 'Input Preview',
       dataIndex: 'input_data',
       ellipsis: true,
       render: (v: Record<string, unknown>) => (
-        <Tooltip title={JSON.stringify(v)}>
-          <Text type="secondary" style={{ fontSize: 12 }}>{inputPreview(v)}</Text>
+        <Tooltip title={JSON.stringify(v)} placement="topLeft">
+          <Text style={{ fontSize: 13, color: '#475569' }}>{inputPreview(v)}</Text>
         </Tooltip>
       ),
     },
     {
       title: 'Outputs',
       dataIndex: 'outputs',
-      width: 220,
+      width: 200,
       render: (v: OutputType[]) => (
-        <Space wrap size={2}>
+        <Space wrap size={4}>
           {v.map((o) => (
-            <Tag key={o} style={{ fontSize: 10, margin: 0 }}>{OUTPUT_LABELS[o]}</Tag>
+            <Tag key={o} style={{ fontSize: 10, margin: 0, background: '#f1f5f9', border: 'none', color: '#64748b' }}>
+              {OUTPUT_LABELS[o]}
+            </Tag>
           ))}
         </Space>
       ),
@@ -140,32 +139,15 @@ export function TaskListPage() {
     {
       title: 'Status',
       dataIndex: 'status',
-      width: 120,
-      filters: [
-        { text: 'Pending', value: 'PENDING' },
-        { text: 'Running', value: 'RUNNING' },
-        { text: 'Completed', value: 'COMPLETED' },
-        { text: 'Failed', value: 'FAILED' },
-      ],
+      width: 130,
       render: (v: TaskStatus) => <TaskStatusBadge status={v} showDot />,
     },
     {
-      title: 'Retry',
-      dataIndex: 'retry_count',
-      width: 64,
-      align: 'center',
-      render: (v: number) => v > 0 ? <Badge count={v} color="orange" /> : <Text type="secondary">—</Text>,
-    },
-    {
-      title: 'Created',
+      title: 'Age',
       dataIndex: 'created_at',
-      width: 110,
-      sorter: true,
-      defaultSortOrder: 'descend',
+      width: 100,
       render: (v: string) => (
-        <Tooltip title={new Date(v).toLocaleString()}>
-          <Text style={{ fontSize: 12 }}>{formatRelativeTime(v)}</Text>
-        </Tooltip>
+        <Text style={{ fontSize: 12, color: '#94a3b8' }}>{formatRelativeTime(v)}</Text>
       ),
     },
     {
@@ -174,7 +156,7 @@ export function TaskListPage() {
       width: 90,
       render: (_: unknown, record: Task) =>
         record.status === 'COMPLETED' || record.status === 'FAILED'
-          ? <Text style={{ fontSize: 12 }}>{formatDuration(record.created_at, record.updated_at)}</Text>
+          ? <Text style={{ fontSize: 12, fontWeight: 500 }}>{formatDuration(record.created_at, record.updated_at)}</Text>
           : <Text type="secondary">—</Text>,
     },
     {
@@ -183,25 +165,25 @@ export function TaskListPage() {
       width: 80,
       fixed: 'right',
       render: (_: unknown, record: Task) => (
-        <Space size={4}>
+        <Space size={4} onClick={(e) => e.stopPropagation()}>
           <Button
             size="small"
             type="text"
-            icon={<EyeOutlined />}
-            onClick={(e) => { e.stopPropagation(); navigate(`/tasks/${record.id}`) }}
+            icon={<EyeOutlined style={{ color: '#64748b' }} />}
+            onClick={() => navigate(`/tasks/${record.id}`)}
           />
           <Popconfirm
             title="Delete this task?"
-            onConfirm={(e) => { e?.stopPropagation(); deleteOne(record.id) }}
+            onConfirm={() => deleteOne(record.id)}
             okText="Delete"
             okType="danger"
+            placement="bottomRight"
           >
             <Button
               size="small"
               type="text"
               danger
               icon={<DeleteOutlined />}
-              onClick={(e) => e.stopPropagation()}
             />
           </Popconfirm>
         </Space>
@@ -209,123 +191,129 @@ export function TaskListPage() {
     },
   ]
 
-  const handleTableChange = (
-    _: TablePaginationConfig,
-    tableFilters: Record<string, FilterValue | null>,
-    sorter: SorterResult<Task> | SorterResult<Task>[],
-  ) => {
-    const s = Array.isArray(sorter) ? sorter[0] : sorter
-    if (s.order) {
-      set({ sort: `${s.field}:${s.order === 'ascend' ? 'asc' : 'desc'}` })
-    }
-    if (tableFilters.status) {
-      set({ status: tableFilters.status[0] as TaskStatus })
-    }
-    if (tableFilters.input_type) {
-      set({ inputType: tableFilters.input_type[0] as InputType })
-    }
-  }
-
   return (
-    <>
+    <div style={{ width: '100%' }}>
       {ctx}
-      <Space direction="vertical" size={12} style={{ width: '100%' }}>
-        {/* Toolbar */}
-        <Space style={{ justifyContent: 'space-between', width: '100%' }} wrap>
-          <Space wrap>
-            <Segmented
-              options={[
-                { label: 'All', value: '' },
-                { label: 'Pending', value: 'PENDING' },
-                { label: 'Running', value: 'RUNNING' },
-                { label: 'Completed', value: 'COMPLETED' },
-                { label: 'Failed', value: 'FAILED' },
-              ]}
-              value={filters.status}
-              onChange={(v) => set({ status: v as TaskStatus | '' })}
-            />
-            <Select
-              value={filters.inputType}
-              onChange={(v) => set({ inputType: v })}
-              options={[
-                { label: 'All types', value: '' },
-                { label: 'Text', value: 'text' },
-                { label: 'File', value: 'audio_path' },
-                { label: 'YouTube', value: 'youtube_url' },
-              ]}
-              style={{ width: 140 }}
-              placeholder="Input type"
-            />
-            <RangePicker
-              showTime
-              onChange={(v) =>
-                set({ dateRange: v as [Dayjs | null, Dayjs | null] | null })
-              }
-              style={{ width: 340 }}
-            />
-            <Button size="small" onClick={() => setFilters(DEFAULT_FILTERS)}>
-              Reset
-            </Button>
-          </Space>
-
+      <Space direction="vertical" size={24} style={{ width: '100%' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+          <div>
+            <Title level={3} style={{ margin: 0, letterSpacing: '-0.025em' }}>Task History</Title>
+            <Text type="secondary">Manage and monitor all orchestrated AI tasks.</Text>
+          </div>
           <Space>
-            {selectedIds.length > 0 && (
-              <Popconfirm
-                title={`Delete ${selectedIds.length} tasks?`}
-                onConfirm={() => bulkDelete(selectedIds)}
-                okText="Delete all"
-                okType="danger"
-              >
-                <Button danger icon={<DeleteOutlined />} loading={bulkDeleting}>
-                  Delete {selectedIds.length}
-                </Button>
-              </Popconfirm>
-            )}
-            <Button icon={<ReloadOutlined />} onClick={() => refetch()} loading={isFetching}>
+             <Button 
+               icon={<ReloadOutlined />} 
+               onClick={() => refetch()} 
+               loading={isFetching}
+               style={{ borderRadius: 6 }}
+             >
               Refresh
             </Button>
           </Space>
-        </Space>
+        </div>
 
-        {/* Table */}
-        <Table
-          dataSource={data?.tasks ?? []}
-          columns={columns}
-          rowKey="id"
-          size="small"
-          loading={isLoading || isFetching}
-          scroll={{ x: 1100 }}
-          pagination={false}
-          rowSelection={{
-            selectedRowKeys: selectedIds,
-            onChange: (keys) => setSelectedIds(keys as string[]),
-          }}
-          onRow={(record) => ({
-            onClick: () => navigate(`/tasks/${record.id}`),
-            style: { cursor: 'pointer' },
-          })}
-          onChange={handleTableChange}
-          footer={() =>
-            data?.has_more ? (
-              <Button
-                block
-                size="small"
-                loading={isFetching}
-                onClick={() => setFilters((f) => ({ ...f, cursor: data.next_cursor ?? undefined }))}
-              >
-                Load more (has_more = true)
+        {/* Toolbar Card */}
+        <Card bordered={false} bodyStyle={{ padding: 16 }} style={{ boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)' }}>
+          <Space style={{ justifyContent: 'space-between', width: '100%' }} wrap>
+            <Space wrap size={16}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Text strong style={{ fontSize: 12, color: '#64748b' }}>STATUS</Text>
+                <Segmented
+                  options={[
+                    { label: 'All', value: '' },
+                    { label: 'Pending', value: 'PENDING' },
+                    { label: 'Running', value: 'RUNNING' },
+                    { label: 'Completed', value: 'COMPLETED' },
+                    { label: 'Failed', value: 'FAILED' },
+                  ]}
+                  value={filters.status}
+                  onChange={(v) => set({ status: v as TaskStatus | '' })}
+                />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Text strong style={{ fontSize: 12, color: '#64748b' }}>TYPE</Text>
+                <Select
+                  value={filters.inputType}
+                  onChange={(v) => set({ inputType: v })}
+                  options={[
+                    { label: 'All types', value: '' },
+                    { label: 'Text', value: 'text' },
+                    { label: 'File', value: 'audio_path' },
+                    { label: 'YouTube', value: 'youtube_url' },
+                  ]}
+                  style={{ width: 140 }}
+                  placeholder="Input type"
+                />
+              </div>
+              <RangePicker
+                showTime
+                onChange={(v) =>
+                  set({ dateRange: v as [Dayjs | null, Dayjs | null] | null })
+                }
+                style={{ width: 340 }}
+              />
+              <Button type="text" onClick={() => setFilters(DEFAULT_FILTERS)} style={{ color: '#64748b' }}>
+                Reset Filters
               </Button>
-            ) : null
-          }
-        />
+            </Space>
 
-        {/* Row count */}
-        <Text type="secondary" style={{ fontSize: 12 }}>
-          {data?.tasks.length ?? 0} rows shown
-          {data?.has_more ? ' · more available' : ''}
-          {selectedIds.length > 0 ? ` · ${selectedIds.length} selected` : ''}
-        </Text>
+            <Space>
+              {selectedIds.length > 0 && (
+                <Popconfirm
+                  title={`Delete ${selectedIds.length} tasks?`}
+                  onConfirm={() => bulkDelete(selectedIds)}
+                  okText="Delete all"
+                  okType="danger"
+                >
+                  <Button danger icon={<DeleteOutlined />} loading={bulkDeleting}>
+                    Delete Selected ({selectedIds.length})
+                  </Button>
+                </Popconfirm>
+              )}
+            </Space>
+          </Space>
+        </Card>
+
+        {/* Table Card */}
+        <Card bordered={false} bodyStyle={{ padding: 0 }} style={{ boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)', overflow: 'hidden' }}>
+          <Table
+            dataSource={data?.tasks ?? []}
+            columns={columns}
+            rowKey="id"
+            size="middle"
+            loading={isLoading || isFetching}
+            scroll={{ x: 1100 }}
+            pagination={false}
+            rowSelection={{
+              selectedRowKeys: selectedIds,
+              onChange: (keys) => setSelectedIds(keys as string[]),
+            }}
+            onRow={(record) => ({
+              onClick: () => navigate(`/tasks/${record.id}`),
+              style: { cursor: 'pointer' },
+            })}
+            footer={() =>
+              data?.has_more ? (
+                <div style={{ padding: '12px 0', textAlign: 'center' }}>
+                   <Button
+                    loading={isFetching}
+                    onClick={() => setFilters((f) => ({ ...f, cursor: data.next_cursor ?? undefined }))}
+                    style={{ borderRadius: 6 }}
+                  >
+                    Load More Tasks
+                  </Button>
+                </div>
+              ) : (
+                <div style={{ padding: '16px', textAlign: 'center' }}>
+                  <Text type="secondary" style={{ fontSize: 13 }}>
+                    Showing {data?.tasks.length ?? 0} tasks. End of history.
+                  </Text>
+                </div>
+              )
+            }
+          />
+        </Card>
       </Space>
-    </>
+    </div>
   )
 }

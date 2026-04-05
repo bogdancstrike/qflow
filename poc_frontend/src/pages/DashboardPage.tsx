@@ -1,107 +1,94 @@
 import { useNavigate } from 'react-router-dom'
 import {
-  Row, Col, Card, Statistic, Table, Tag, Space, Typography, Spin, Alert, Badge,
+  Row, Col, Card, Statistic, Table, Tag, Space, Typography, Spin, Alert, Badge, Button, Divider, Tooltip, Tabs,
 } from 'antd'
 import {
-  CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined,
-  ThunderboltOutlined, RiseOutlined, UnorderedListOutlined,
+  InfoCircleOutlined,
 } from '@ant-design/icons'
 import {
-  Pie, Column, Bar, type PieConfig, type ColumnConfig, type BarConfig,
+  Pie, Column, type PieConfig, type ColumnConfig,
 } from '@ant-design/plots'
 import type { ColumnsType } from 'antd/es/table'
 import { useDashboardStats } from '@/hooks/useDashboardStats'
 import { TaskStatusBadge } from '@/components/shared/TaskStatusBadge'
-import { OUTPUT_LABELS, STATUS_COLORS } from '@/lib/constants'
 import { formatMs, formatRelativeTime, inputPreview } from '@/lib/formatters'
-import type { Task, OutputType } from '@/types'
+import type { Task } from '@/types'
 
 const { Title, Text } = Typography
 
 const STATUS_PIE_COLORS: Record<string, string> = {
   COMPLETED: '#52c41a',
-  FAILED: '#ff4d4f',
-  RUNNING: '#1677ff',
+  FAILED: '#f5222d',
+  RUNNING: '#1890ff',
   PENDING: '#faad14',
 }
 
-const SERIES_COLORS: Record<string, string> = {
-  COMPLETED: '#52c41a',
-  FAILED: '#ff4d4f',
-  RUNNING: '#1677ff',
-  PENDING: '#faad14',
-}
-
-function StatCard({
-  title, value, suffix, icon, color, loading,
+function AnalysisCard({
+  title, value, suffix, loading, footer,
 }: {
   title: string
   value: string | number
   suffix?: string
-  icon: React.ReactNode
-  color: string
   loading?: boolean
+  footer?: React.ReactNode
 }) {
   return (
-    <Card size="small" style={{ height: '100%' }}>
-      <Statistic
-        title={
-          <Space>
-            <span style={{ color }}>{icon}</span>
-            {title}
-          </Space>
-        }
-        value={value}
-        suffix={suffix}
-        loading={loading}
-        valueStyle={{ fontSize: 28, fontWeight: 700 }}
-      />
+    <Card bordered={false} loading={loading} bodyStyle={{ padding: '20px 24px 8px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <Text type="secondary" style={{ fontSize: 14 }}>{title}</Text>
+        <Tooltip title="Task stats information">
+          <InfoCircleOutlined style={{ color: '#8c8c8c' }} />
+        </Tooltip>
+      </div>
+      <div style={{ margin: '4px 0 12px' }}>
+        <Text style={{ fontSize: 30, color: '#000', fontWeight: 600 }}>
+          {value}{suffix}
+        </Text>
+      </div>
+      <div style={{ height: 16 }}>
+        {/* Vertical spacing consistency */}
+      </div>
+      <Divider style={{ margin: '8px 0' }} />
+      <div style={{ padding: '8px 0', fontSize: 14 }}>
+        {footer}
+      </div>
     </Card>
   )
 }
 
 const RECENT_COLS: ColumnsType<Task> = [
   {
-    title: 'ID',
+    title: 'TASK ID',
     dataIndex: 'id',
-    width: 110,
-    render: (v: string) => <Text code style={{ fontSize: 11 }}>{v.slice(0, 8)}</Text>,
+    width: 100,
+    render: (v: string) => <Text style={{ fontSize: 13, color: '#1890ff', fontWeight: 500 }}>{v.slice(0, 8).toUpperCase()}</Text>,
   },
   {
-    title: 'Type',
+    title: 'TYPE',
     dataIndex: 'input_type',
-    width: 110,
-    render: (v: string) => <Tag>{v}</Tag>,
+    width: 100,
+    render: (v: string) => <Text style={{ fontSize: 13, textTransform: 'uppercase', color: '#595959' }}>{v}</Text>,
   },
   {
-    title: 'Input',
+    title: 'CONTENT PREVIEW',
     dataIndex: 'input_data',
     ellipsis: true,
     render: (v: Record<string, unknown>) => (
-      <Text type="secondary" style={{ fontSize: 12 }}>{inputPreview(v)}</Text>
+      <Text type="secondary" style={{ fontSize: 13 }}>{inputPreview(v)}</Text>
     ),
   },
   {
-    title: 'Outputs',
-    dataIndex: 'outputs',
-    width: 180,
-    render: (v: OutputType[]) => (
-      <Space wrap size={2}>
-        {v.map((o) => <Tag key={o} style={{ fontSize: 10, margin: 0 }}>{OUTPUT_LABELS[o]}</Tag>)}
-      </Space>
-    ),
-  },
-  {
-    title: 'Status',
+    title: 'STATUS',
     dataIndex: 'status',
-    width: 110,
+    width: 120,
     render: (v: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED') => <TaskStatusBadge status={v} showDot />,
   },
   {
-    title: 'Age',
+    title: 'AGE',
     dataIndex: 'created_at',
-    width: 90,
-    render: (v: string) => <Text style={{ fontSize: 12 }}>{formatRelativeTime(v)}</Text>,
+    width: 100,
+    align: 'right',
+    render: (v: string) => <Text style={{ fontSize: 12, color: '#8c8c8c' }}>{formatRelativeTime(v)}</Text>,
   },
 ]
 
@@ -121,9 +108,9 @@ export function DashboardPage() {
     data: pieData,
     angleField: 'value',
     colorField: 'status',
-    radius: 0.75,
-    innerRadius: 0.55,
-    label: { text: 'status', style: { fontSize: 12 } },
+    radius: 0.8,
+    innerRadius: 0.65,
+    label: { text: 'value', style: { fontSize: 11, fontWeight: 600 } },
     legend: { color: { position: 'bottom' } },
     color: ({ status }: { status: string }) => STATUS_PIE_COLORS[status] ?? '#8c8c8c',
     annotations: stats
@@ -133,21 +120,21 @@ export function DashboardPage() {
             style: {
               text: `${stats.total}`,
               x: '50%',
-              y: '50%',
+              y: '48%',
               textAlign: 'center',
-              fontSize: 24,
-              fontWeight: 700,
+              fontSize: 28,
+              fontWeight: 600,
               fill: '#000',
             },
           },
           {
             type: 'text',
             style: {
-              text: 'total',
+              text: 'Tasks',
               x: '50%',
               y: '62%',
               textAlign: 'center',
-              fontSize: 12,
+              fontSize: 14,
               fill: '#8c8c8c',
             },
           },
@@ -161,170 +148,118 @@ export function DashboardPage() {
     yField: 'count',
     colorField: 'status',
     stack: true,
-    color: ({ status }: { status: string }) => SERIES_COLORS[status] ?? '#8c8c8c',
+    color: ({ status }: { status: string }) => STATUS_PIE_COLORS[status] ?? '#8c8c8c',
     axis: { x: { label: { autoRotate: true } } },
-    legend: { color: { position: 'top-right' } },
-  }
-
-  const durationConfig: BarConfig = {
-    data: stats?.durationByInputType ?? [],
-    xField: 'avgMs',
-    yField: 'type',
-    colorField: 'type',
-    label: {
-      text: (d: { avgMs: number }) => formatMs(d.avgMs),
-      position: 'right',
-      style: { fontSize: 12 },
-    },
-    axis: { x: { title: 'Avg duration (ms)' } },
-    legend: false,
-  }
-
-  const outputUsageConfig: BarConfig = {
-    data: stats
-      ? Object.entries(stats.outputUsage).map(([output, count]) => ({
-          output: OUTPUT_LABELS[output as OutputType] ?? output,
-          count,
-        }))
-      : [],
-    xField: 'count',
-    yField: 'output',
-    colorField: 'output',
-    label: { text: 'count', position: 'right', style: { fontSize: 12 } },
-    axis: { x: { title: 'Times requested' } },
-    legend: false,
+    legend: { color: { position: 'top', layout: { justifyContent: 'flex-end' } } },
   }
 
   return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      <Title level={4} style={{ margin: 0 }}>Dashboard</Title>
-
-      {/* Stat cards */}
-      <Row gutter={[12, 12]}>
-        <Col xs={12} sm={8} lg={4}>
-          <StatCard
-            title="Total Tasks"
+    <Space direction="vertical" size={24} style={{ width: '100%' }}>
+      {/* Top Section */}
+      <Row gutter={[20, 20]}>
+        <Col xs={24} sm={12} lg={6}>
+          <AnalysisCard
+            title="Total Orchestrated"
             value={stats?.total ?? 0}
-            icon={<UnorderedListOutlined />}
-            color="#1677ff"
             loading={isLoading}
+            footer={
+              <Space>
+                <Text type="secondary">Daily Tasks</Text>
+                <Text strong>{Math.floor((stats?.total ?? 0) / 30)}</Text>
+              </Space>
+            }
           />
         </Col>
-        <Col xs={12} sm={8} lg={4}>
-          <StatCard
-            title="Completed"
-            value={stats?.byStatus.COMPLETED ?? 0}
-            icon={<CheckCircleOutlined />}
-            color="#52c41a"
-            loading={isLoading}
-          />
-        </Col>
-        <Col xs={12} sm={8} lg={4}>
-          <StatCard
-            title="Failed"
-            value={stats?.byStatus.FAILED ?? 0}
-            icon={<CloseCircleOutlined />}
-            color="#ff4d4f"
-            loading={isLoading}
-          />
-        </Col>
-        <Col xs={12} sm={8} lg={4}>
-          <StatCard
-            title="Pending / Running"
-            value={(stats?.byStatus.PENDING ?? 0) + (stats?.byStatus.RUNNING ?? 0)}
-            icon={<ClockCircleOutlined />}
-            color="#faad14"
-            loading={isLoading}
-          />
-        </Col>
-        <Col xs={12} sm={8} lg={4}>
-          <StatCard
+        <Col xs={24} sm={12} lg={6}>
+          <AnalysisCard
             title="Success Rate"
             value={stats?.successRate ?? 0}
             suffix="%"
-            icon={<RiseOutlined />}
-            color="#52c41a"
             loading={isLoading}
+            footer={
+              <Space>
+                <Text type="secondary">Failed total</Text>
+                <Text strong>{stats?.byStatus.FAILED ?? 0}</Text>
+              </Space>
+            }
           />
         </Col>
-        <Col xs={12} sm={8} lg={4}>
-          <StatCard
-            title="Avg Duration"
+        <Col xs={24} sm={12} lg={6}>
+          <AnalysisCard
+            title="Average Latency"
             value={formatMs(stats?.avgDurationMs ?? 0)}
-            icon={<ThunderboltOutlined />}
-            color="#722ed1"
             loading={isLoading}
+            footer={
+              <Space>
+                <Text type="secondary">P95 Latency</Text>
+                <Text strong>{formatMs(stats?.p95DurationMs ?? 0)}</Text>
+              </Space>
+            }
+          />
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <AnalysisCard
+            title="Active Jobs"
+            value={(stats?.byStatus.PENDING ?? 0) + (stats?.byStatus.RUNNING ?? 0)}
+            loading={isLoading}
+            footer={
+              <Space>
+                <Text type="secondary">In queue</Text>
+                <Text strong>{stats?.byStatus.PENDING ?? 0}</Text>
+              </Space>
+            }
           />
         </Col>
       </Row>
 
-      {/* Charts row 1 */}
-      <Row gutter={[12, 12]}>
-        <Col xs={24} lg={8}>
-          <Card title="Tasks by Status" size="small" style={{ height: 340 }}>
-            {isLoading ? <Spin /> : <Pie {...pieConfig} height={260} />}
-          </Card>
-        </Col>
-        <Col xs={24} lg={16}>
-          <Card title="Tasks over Time (last 7 days)" size="small" style={{ height: 340 }}>
-            {isLoading ? <Spin /> : <Column {...timeSeriesConfig} height={260} />}
-          </Card>
-        </Col>
-      </Row>
+      {/* Main Charts */}
+      <Card bordered={false} bodyStyle={{ padding: '0 24px 24px' }}>
+        <Tabs
+          defaultActiveKey="1"
+          size="large"
+          tabBarStyle={{ marginBottom: 24 }}
+          items={[
+            {
+              key: '1',
+              label: 'Task Volume',
+              children: (
+                <Row gutter={48}>
+                  <Col span={16}>
+                    <Title level={5} style={{ marginBottom: 20 }}>Throughput (7 Days)</Title>
+                    {isLoading ? <Spin /> : <Column {...timeSeriesConfig} height={300} />}
+                  </Col>
+                  <Col span={8}>
+                    <Title level={5} style={{ marginBottom: 20 }}>Status Distribution</Title>
+                    {isLoading ? <Spin /> : <Pie {...pieConfig} height={300} />}
+                  </Col>
+                </Row>
+              ),
+            },
+            {
+              key: '2',
+              label: 'Performance',
+              children: <div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Text type="secondary">Detailed performance metrics coming soon...</Text></div>,
+            },
+          ]}
+        />
+      </Card>
 
-      {/* Charts row 2 */}
-      <Row gutter={[12, 12]}>
-        <Col xs={24} lg={12}>
-          <Card title="Avg Duration by Input Type" size="small" style={{ height: 280 }}>
-            {isLoading ? (
-              <Spin />
-            ) : stats?.durationByInputType.length === 0 ? (
-              <Text type="secondary">No completed tasks yet</Text>
-            ) : (
-              <Bar {...durationConfig} height={200} />
-            )}
-          </Card>
-        </Col>
-        <Col xs={24} lg={12}>
-          <Card title="Output Type Usage" size="small" style={{ height: 280 }}>
-            {isLoading ? <Spin /> : <Bar {...outputUsageConfig} height={200} />}
-          </Card>
-        </Col>
-      </Row>
-
-      {/* p95 callout */}
-      {stats && stats.p95DurationMs > 0 && (
-        <Card size="small" style={{ background: '#f0f5ff', border: '1px solid #adc6ff' }}>
-          <Space>
-            <ThunderboltOutlined style={{ color: '#2f54eb' }} />
-            <Text>
-              <Text strong>p95 duration: </Text>
-              <Text code>{formatMs(stats.p95DurationMs)}</Text>
-              {'  '}
-              <Text type="secondary">across {stats.total} tasks (last 200)</Text>
-            </Text>
-          </Space>
-        </Card>
-      )}
-
-      {/* Recent tasks */}
+      {/* Recent tasks Table */}
       <Card
-        title="Recent Tasks"
-        size="small"
-        extra={
-          <a onClick={() => navigate('/tasks')} style={{ fontSize: 13 }}>
-            View all →
-          </a>
-        }
+        title={<Text strong>Recent Pipeline Activity</Text>}
+        bordered={false}
+        extra={<Button type="link" onClick={() => navigate('/tasks')}>All Tasks</Button>}
       >
         <Table
           dataSource={stats?.recentTasks ?? []}
           columns={RECENT_COLS}
           rowKey="id"
-          size="small"
           pagination={false}
           loading={isLoading}
-          onRow={(record) => ({ onClick: () => navigate(`/tasks/${record.id}`), style: { cursor: 'pointer' } })}
+          onRow={(record) => ({ 
+            onClick: () => navigate(`/tasks/${record.id}`), 
+            style: { cursor: 'pointer' } 
+          })}
         />
       </Card>
     </Space>

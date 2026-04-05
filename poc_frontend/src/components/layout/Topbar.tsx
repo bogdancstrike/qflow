@@ -53,25 +53,34 @@ export function Topbar() {
     <Header
       style={{
         background: '#fff',
-        padding: '0 24px',
-        borderBottom: '1px solid #f0f0f0',
+        padding: '0 32px',
+        borderBottom: '1px solid #f1f5f9',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        height: 56,
+        justifyContent: 'flex-end',
+        height: 64,
       }}
     >
-      <Typography.Title level={4} style={{ margin: 0, fontSize: 18 }}>
-        QFlow AI Orchestrator
-      </Typography.Title>
-
       <Tooltip title="System health">
         <Popover
           content={health ? <HealthPopoverContent health={health} /> : 'Checking…'}
           title="Service Status"
           trigger="click"
+          placement="bottomRight"
         >
-          <Badge status={dotStatus} text={dotText} style={{ cursor: 'pointer' }} />
+          <div style={{ 
+            padding: '4px 12px', 
+            borderRadius: 20, 
+            background: '#f8fafc', 
+            border: '1px solid #e2e8f0',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8
+          }}>
+            <Badge status={dotStatus} />
+            <Text style={{ fontSize: 13, color: '#64748b', fontWeight: 500 }}>System {dotText}</Text>
+          </div>
         </Popover>
       </Tooltip>
     </Header>

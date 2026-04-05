@@ -67,58 +67,87 @@ export function FlowCataloguePage() {
 
   return (
     <Space direction="vertical" style={{ width: '100%' }} size={24}>
-      <Title level={4} style={{ margin: 0 }}>Flow Catalogue</Title>
+      <div>
+        <Title level={3} style={{ margin: 0, letterSpacing: '-0.025em' }}>System Architecture</Title>
+        <Text type="secondary">Explore the node catalogue and processing topology of the QFlow orchestrator.</Text>
+      </div>
 
-      <Row gutter={24}>
-        <Col xs={24} xl={14}>
-          <Card title={`Processing Nodes (${data?.count ?? '…'})`} size="small">
+      <Row gutter={[20, 20]}>
+        <Col span={24}>
+          <Card 
+            title={<Text strong style={{ fontSize: 14 }}>Processing Node Registry</Text>} 
+            bordered={false}
+            style={{ boxShadow: '0 1px 3px 0 rgba(0,0,0,0.1)' }}
+            bodyStyle={{ padding: 0 }}
+          >
             {isLoading ? (
-              <Skeleton active />
+              <div style={{ padding: 24 }}><Skeleton active /></div>
             ) : (
               <Table
                 dataSource={data?.nodes}
                 columns={COLUMNS}
                 rowKey="node_id"
-                size="small"
+                size="middle"
                 pagination={false}
               />
             )}
           </Card>
         </Col>
 
-        <Col xs={24} xl={10}>
-          <Card title="Full Topology (all paths)" size="small">
-            <DagGraph
-              plan={FULL_PLAN}
-              currentStep={null}
-              stepResults={{}}
-              height={380}
-            />
-            <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
-              Shows maximum path: YouTube → Download → STT → all Phase 2 branches in parallel.
-              Text input skips the ingest chain.
-            </Text>
+        <Col span={24}>
+          <Card 
+            title={<Text strong style={{ fontSize: 14 }}>Execution Blueprint (DAG)</Text>} 
+            bordered={false}
+            style={{ boxShadow: '0 1px 3px 0 rgba(0,0,0,0.1)' }}
+          >
+            <div style={{ background: '#fafafa', borderRadius: 4, border: '1px solid #f0f0f0', padding: 16 }}>
+               <DagGraph
+                plan={FULL_PLAN}
+                currentStep={null}
+                stepResults={{}}
+                height={300}
+              />
+            </div>
+            <div style={{ marginTop: 12 }}>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                <Text strong>Topology overview:</Text> Full processing graph showing YouTube download, STT, and parallel analysis branches.
+              </Text>
+            </div>
           </Card>
         </Col>
       </Row>
 
-      <Card title="Valid Output Types" size="small">
+      <div style={{ marginTop: 8 }}>
+        <Title level={4} style={{ marginBottom: 16, letterSpacing: '-0.025em' }}>Analytics Definitions</Title>
         {isLoading ? (
-          <Skeleton active paragraph={{ rows: 2 }} />
+          <Skeleton active paragraph={{ rows: 3 }} />
         ) : (
-          <Space wrap size={16}>
+          <Row gutter={[16, 16]}>
             {(data?.valid_outputs ?? []).map((o) => (
-              <div key={o} style={{ background: '#fafafa', border: '1px solid #f0f0f0', borderRadius: 8, padding: '8px 16px', minWidth: 180 }}>
-                <Tag style={{ marginBottom: 4 }}>{o}</Tag>
-                <div>
-                  <Text strong style={{ fontSize: 13 }}>{OUTPUT_LABELS[o as OutputType]}</Text>
-                </div>
-                <Text type="secondary" style={{ fontSize: 12 }}>{OUTPUT_DESCRIPTIONS[o as OutputType]}</Text>
-              </div>
+              <Col key={o} xs={24} sm={12} lg={8} xl={6}>
+                <Card 
+                  bordered={false} 
+                  style={{ height: '100%', boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)', border: '1px solid #f1f5f9' }}
+                  bodyStyle={{ padding: 16 }}
+                >
+                  <Space direction="vertical" size={12} style={{ width: '100%' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <Tag color="blue" bordered={false} style={{ fontSize: 10, fontWeight: 700, margin: 0 }}>{o.toUpperCase()}</Tag>
+                      <Badge status="processing" color="#3b82f6" />
+                    </div>
+                    <div>
+                      <Title level={5} style={{ margin: '0 0 4px', fontSize: 15 }}>{OUTPUT_LABELS[o as OutputType]}</Title>
+                      <Text type="secondary" style={{ fontSize: 13, lineHeight: 1.5, display: 'block' }}>
+                        {OUTPUT_DESCRIPTIONS[o as OutputType]}
+                      </Text>
+                    </div>
+                  </Space>
+                </Card>
+              </Col>
             ))}
-          </Space>
+          </Row>
         )}
-      </Card>
+      </div>
     </Space>
   )
 }
