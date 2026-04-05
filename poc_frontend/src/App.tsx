@@ -7,6 +7,7 @@ import { DashboardPage } from '@/pages/DashboardPage'
 import { TaskListPage } from '@/pages/TaskListPage'
 import { TaskDetailPage } from '@/pages/TaskDetailPage'
 import { FlowCataloguePage } from '@/pages/FlowCataloguePage'
+import { useThemeStore } from '@/stores/themeStore'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -18,35 +19,40 @@ const queryClient = new QueryClient({
 })
 
 export default function App() {
+  const { mode } = useThemeStore()
+  const isDark = mode === 'dark'
+
   return (
     <ConfigProvider
       theme={{
-        algorithm: theme.defaultAlgorithm,
+        algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
         token: {
           colorPrimary: '#1890ff', // Classic Ant Pro Blue
           borderRadius: 4, // Tighter corners for 'Pro' look
           fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-          colorBgLayout: '#f0f2f5', // Classic Ant Pro Grey
+          colorBgLayout: isDark ? '#141414' : '#f0f2f5',
           fontSize: 14,
-          colorTextHeading: '#1f1f1f',
-          colorTextSecondary: '#8c8c8c',
+          colorTextHeading: isDark ? '#d9d9d9' : '#1f1f1f',
+          colorTextSecondary: isDark ? '#8c8c8c' : '#8c8c8c',
         },
         components: {
           Layout: {
-            headerBg: '#ffffff',
-            siderBg: '#ffffff',
+            headerBg: isDark ? '#1f1f1f' : '#ffffff',
+            siderBg: isDark ? '#1f1f1f' : '#ffffff',
           },
           Card: {
-            boxShadowTertiary: '0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.02)',
+            boxShadowTertiary: isDark 
+              ? '0 1px 2px 0 rgba(0, 0, 0, 0.5), 0 1px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px 0 rgba(0, 0, 0, 0.4)'
+              : '0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.02)',
           },
           Menu: {
-            itemSelectedBg: '#e6f7ff',
+            itemSelectedBg: isDark ? '#111b26' : '#e6f7ff',
             itemSelectedColor: '#1890ff',
             itemHeight: 40,
           },
           Table: {
-            headerBg: '#fafafa',
-            headerColor: '#595959',
+            headerBg: isDark ? '#1d1d1d' : '#fafafa',
+            headerColor: isDark ? '#8c8c8c' : '#595959',
             headerBorderRadius: 2,
           },
         },

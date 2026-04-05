@@ -168,7 +168,7 @@ export function OutputViewer({ finalOutput, sourceText }: Props) {
             content = <LangMetaViewer {...(value as { language: string; text: string })} />
             break
           case 'text_en':
-            content = <TranslationViewer text={value as string} />
+            content = <TranslationViewer text={(value as { text: string }).text} />
             break
           default:
             content = <Paragraph code>{JSON.stringify(value, null, 2)}</Paragraph>

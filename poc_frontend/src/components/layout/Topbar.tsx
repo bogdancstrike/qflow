@@ -1,8 +1,10 @@
 import { useEffect } from 'react'
-import { Layout, Space, Tooltip, Popover, Typography, Badge } from 'antd'
+import { Layout, Space, Tooltip, Popover, Typography, Badge, Switch } from 'antd'
+import { SunOutlined, MoonOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
 import { healthApi } from '@/api/health'
 import { useHealthStore } from '@/stores/healthStore'
+import { useThemeStore } from '@/stores/themeStore'
 import { HEALTH_POLL_INTERVAL_MS } from '@/lib/constants'
 import type { HealthStatus } from '@/types'
 
@@ -31,6 +33,7 @@ function HealthPopoverContent({ health }: { health: HealthStatus }) {
 
 export function Topbar() {
   const { health, error, setHealth, setError } = useHealthStore()
+  const { mode, toggleMode } = useThemeStore()
 
   const { data } = useQuery<HealthStatus, Error>({
     queryKey: ['health'],
@@ -52,37 +55,48 @@ export function Topbar() {
   return (
     <Header
       style={{
-        background: '#fff',
+        background: mode === 'dark' ? '#1f1f1f' : '#fff',
         padding: '0 32px',
-        borderBottom: '1px solid #f1f5f9',
+        borderBottom: `1px solid ${mode === 'dark' ? '#303030' : '#f1f5f9'}`,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'flex-end',
         height: 64,
       }}
     >
-      <Tooltip title="System health">
-        <Popover
-          content={health ? <HealthPopoverContent health={health} /> : 'Checking…'}
-          title="Service Status"
-          trigger="click"
-          placement="bottomRight"
-        >
-          <div style={{ 
-            padding: '4px 12px', 
-            borderRadius: 20, 
-            background: '#f8fafc', 
-            border: '1px solid #e2e8f0',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8
-          }}>
-            <Badge status={dotStatus} />
-            <Text style={{ fontSize: 13, color: '#64748b', fontWeight: 500 }}>System {dotText}</Text>
-          </div>
-        </Popover>
-      </Tooltip>
+      <Space size={24}>
+        <Tooltip title={mode === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}>
+          <Switch
+            checkedChildren={<MoonOutlined />}
+            unCheckedChildren={<SunOutlined />}
+            checked={mode === 'dark'}
+            onChange={toggleMode}
+          />
+        </Tooltip>
+
+        <Tooltip title="System health">
+          <Popover
+            content={health ? <HealthPopoverContent health={health} /> : 'Checking…'}
+            title="Service Status"
+            trigger="click"
+            placement="bottomRight"
+          >
+            <div style={{ 
+              padding: '4px 12px', 
+              borderRadius: 20, 
+              background: mode === 'dark' ? '#141414' : '#f8fafc', 
+              border: `1px solid ${mode === 'dark' ? '#303030' : '#e2e8f0'}`,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8
+            }}>
+              <Badge status={dotStatus} />
+              <Text style={{ fontSize: 13, color: mode === 'dark' ? '#d9d9d9' : '#64748b', fontWeight: 500 }}>System {dotText}</Text>
+            </div>
+          </Popover>
+        </Tooltip>
+      </Space>
     </Header>
   )
 }

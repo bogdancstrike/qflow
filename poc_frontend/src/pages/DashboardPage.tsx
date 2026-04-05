@@ -1,18 +1,19 @@
 import { useNavigate } from 'react-router-dom'
 import {
-  Row, Col, Card, Statistic, Table, Tag, Space, Typography, Spin, Alert, Badge, Button, Divider, Tooltip, Tabs,
+  Row, Col, Card, Table, Tag, Space, Typography, Spin, Alert, Button, Divider, Tooltip, Tabs,
 } from 'antd'
 import {
   InfoCircleOutlined,
 } from '@ant-design/icons'
 import {
-  Pie, Column, type PieConfig, type ColumnConfig,
+  Pie, Column, Bar, type PieConfig, type ColumnConfig, type BarConfig,
 } from '@ant-design/plots'
 import type { ColumnsType } from 'antd/es/table'
 import { useDashboardStats } from '@/hooks/useDashboardStats'
 import { TaskStatusBadge } from '@/components/shared/TaskStatusBadge'
 import { formatMs, formatRelativeTime, inputPreview } from '@/lib/formatters'
-import type { Task } from '@/types'
+import type { Task, OutputType } from '@/types'
+import { OUTPUT_LABELS } from '@/lib/constants'
 
 const { Title, Text } = Typography
 
@@ -41,7 +42,7 @@ function AnalysisCard({
         </Tooltip>
       </div>
       <div style={{ margin: '4px 0 12px' }}>
-        <Text style={{ fontSize: 30, color: '#000', fontWeight: 600 }}>
+        <Text style={{ fontSize: 30, color: 'inherit', fontWeight: 600 }}>
           {value}{suffix}
         </Text>
       </div>
@@ -67,7 +68,7 @@ const RECENT_COLS: ColumnsType<Task> = [
     title: 'TYPE',
     dataIndex: 'input_type',
     width: 100,
-    render: (v: string) => <Text style={{ fontSize: 13, textTransform: 'uppercase', color: '#595959' }}>{v}</Text>,
+    render: (v: string) => <Text style={{ fontSize: 13, textTransform: 'uppercase', color: 'inherit' }}>{v}</Text>,
   },
   {
     title: 'CONTENT PREVIEW',
@@ -124,7 +125,7 @@ export function DashboardPage() {
               textAlign: 'center',
               fontSize: 28,
               fontWeight: 600,
-              fill: '#000',
+              fill: 'currentColor',
             },
           },
           {
@@ -151,6 +152,35 @@ export function DashboardPage() {
     color: ({ status }: { status: string }) => STATUS_PIE_COLORS[status] ?? '#8c8c8c',
     axis: { x: { label: { autoRotate: true } } },
     legend: { color: { position: 'top', layout: { justifyContent: 'flex-end' } } },
+  }
+
+  const durationConfig: BarConfig = {
+    data: stats?.durationByInputType ?? [],
+    xField: 'avgMs',
+    yField: 'type',
+    colorField: 'type',
+    label: {
+      text: (d: { avgMs: number }) => formatMs(d.avgMs),
+      position: 'right',
+      style: { fontSize: 12, fontWeight: 600 },
+    },
+    axis: { x: { title: { text: 'Avg duration (ms)' } } },
+    legend: false,
+  }
+
+  const outputUsageConfig: BarConfig = {
+    data: stats
+      ? Object.entries(stats.outputUsage).map(([output, count]) => ({
+          output: OUTPUT_LABELS[output as OutputType] ?? output,
+          count,
+        }))
+      : [],
+    xField: 'count',
+    yField: 'output',
+    colorField: 'output',
+    label: { text: 'count', position: 'right', style: { fontSize: 12, fontWeight: 600 } },
+    axis: { x: { title: { text: 'Times requested' } } },
+    legend: false,
   }
 
   return (
@@ -237,8 +267,19 @@ export function DashboardPage() {
             },
             {
               key: '2',
-              label: 'Performance',
-              children: <div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Text type="secondary">Detailed performance metrics coming soon...</Text></div>,
+              label: 'Performance Analysis',
+              children: (
+                <Row gutter={48}>
+                  <Col span={12}>
+                    <Title level={5} style={{ marginBottom: 20 }}>Latency by Input Type</Title>
+                    {isLoading ? <Spin /> : <Bar {...durationConfig} height={300} />}
+                  </Col>
+                  <Col span={12}>
+                    <Title level={5} style={{ marginBottom: 20 }}>Most Requested Outputs</Title>
+                    {isLoading ? <Spin /> : <Bar {...outputUsageConfig} height={300} />}
+                  </Col>
+                </Row>
+              ),
             },
           ]}
         />
